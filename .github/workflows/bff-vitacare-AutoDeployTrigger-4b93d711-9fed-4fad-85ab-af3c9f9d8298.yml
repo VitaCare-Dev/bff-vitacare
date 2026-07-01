@@ -1,0 +1,49 @@
+name: Trigger auto deployment for bff-vitacare
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/bff-vitacare-AutoDeployTrigger-4b93d711-9fed-4fad-85ab-af3c9f9d8298.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.BFFVITACARE_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.BFFVITACARE_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.BFFVITACARE_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: vitacareacr.azurecr.io
+          registryUsername: ${{ secrets.BFFVITACARE_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.BFFVITACARE_REGISTRY_PASSWORD }}
+          containerAppName: bff-vitacare
+          resourceGroup: rg-vitacare
+          imageToBuild: vitacareacr.azurecr.io/bff-vitacare:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
