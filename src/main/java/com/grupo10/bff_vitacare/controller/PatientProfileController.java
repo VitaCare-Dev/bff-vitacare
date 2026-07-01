@@ -1,6 +1,9 @@
 package com.grupo10.bff_vitacare.controller;
 
+import java.util.List;
+
 import com.grupo10.bff_vitacare.client.PatientServiceClient;
+import com.grupo10.bff_vitacare.dto.DiseaseDto;
 import com.grupo10.bff_vitacare.dto.MedicalThresholdDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
 import com.grupo10.bff_vitacare.dto.UpdatePatientRequestDto;
@@ -39,6 +42,12 @@ public class PatientProfileController {
     public ResponseEntity<MedicalThresholdDto> getCurrentPatientThresholds(@AuthenticationPrincipal Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
         return ResponseEntity.ok(patientServiceClient.getThresholds(patient.getIdPaciente()));
+    }
+
+    @GetMapping("/diseases")
+    public ResponseEntity<List<DiseaseDto>> getCurrentPatientDiseases(@AuthenticationPrincipal Jwt jwt) {
+        PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
+        return ResponseEntity.ok(patientServiceClient.getPatientDiseases(patient.getIdPaciente()));
     }
 
     @PutMapping

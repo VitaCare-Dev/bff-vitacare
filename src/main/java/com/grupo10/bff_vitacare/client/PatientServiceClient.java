@@ -125,6 +125,20 @@ public class PatientServiceClient {
     }
 
     /**
+     * Lista las enfermedades crónicas asociadas a un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return la lista de enfermedades del paciente (vacía si no tiene ninguna)
+     */
+    public List<DiseaseDto> getPatientDiseases(Long idPaciente) {
+        return restClient.get()
+                .uri("/api/chronic-diseases/patient/{idPaciente}", idPaciente)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<DiseaseDto>>() {
+                });
+    }
+
+    /**
      * Elimina un paciente (borrado de cuenta). La base de datos cae en cascada
      * hacia direcciones, enfermedades, umbrales, controles de salud y medicamentos.
      *
