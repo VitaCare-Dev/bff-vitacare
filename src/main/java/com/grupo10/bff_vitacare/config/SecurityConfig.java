@@ -1,0 +1,97 @@
+package com.grupo10.bff_vitacare.config;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+/**
+ * Configuración de seguridad del BFF.
+ *
+ * <p>Valida el ID Token de Firebase Authentication (firma, issuer, expiración
+ * y audiencia) en cada request a {@code /api/**}. Es el único punto del
+ * backend donde se valida el token; los microservicios de dominio confían en
+ * el tráfico proveniente del BFF.</p>
+ */
+@Configuration
+public class SecurityConfig {
+
+    private final String firebaseProjectId;
+
+    public SecurityConfig(@Value("${firebase.project-id}") String firebaseProjectId) {
+        this.firebaseProjectId = firebaseProjectId;
+    }
+
+    /** JWKS público que Google documenta específicamente para verificar ID Tokens de Firebase. */
+    private static final String FIREBASE_JWK_SET_URI =
+            "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+
+    /**
+     * Decodificador de JWT que valida firma, issuer, expiración y audiencia
+     * contra Firebase. Se usa el JWKS fijo de Firebase (en vez de descubrirlo
+     * por {@code issuer-uri}) para que las claves se resuelvan de forma
+     * perezosa en la primera verificación, sin requerir red al arrancar
+     * la aplicación.
+     */
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        String issuer = "https://securetoken.google.com/" + firebaseProjectId;
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder
+                .withJwkSetUri(FIREBASE_JWK_SET_URI)
+                .build();
+
+        OAuth2TokenValidator<Jwt> defaultValidators = JwtValidators.createDefaultWithIssuer(issuer);
+        OAuth2TokenValidator<Jwt> audienceValidator = jwt -> jwt.getAudience().contains(firebaseProjectId)
+                ? OAuth2TokenValidatorResult.success()
+                : OAuth2TokenValidatorResult.failure(new OAuth2Error(
+                        "invalid_token", "El token no corresponde a este proyecto de Firebase", null));
+
+        jwtDecoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(defaultValidators, audienceValidator));
+
+        return jwtDecoder;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder())));
+
+        return http.build();
+    }
+
+    private CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(false);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
+    }
+
+}
