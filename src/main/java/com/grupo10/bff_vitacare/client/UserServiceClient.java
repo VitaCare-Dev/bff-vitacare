@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import com.grupo10.bff_vitacare.dto.AuthenticatedUserDto;
 import com.grupo10.bff_vitacare.exception.RegistrationConflictException;
+import com.grupo10.bff_vitacare.exception.UpstreamErrorException;
 import com.grupo10.bff_vitacare.exception.UpstreamUserNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -77,6 +78,21 @@ public class UserServiceClient {
                     throw new RegistrationConflictException("No fue posible registrar el usuario: " + correo);
                 })
                 .body(AuthenticatedUserDto.class);
+    }
+
+    /**
+     * Elimina el usuario sincronizado en {@code tb_usuario} por su UID de Firebase.
+     *
+     * @param firebaseUid UID de Firebase del usuario a eliminar
+     */
+    public void deleteUserByFirebaseUid(String firebaseUid) {
+        restClient.delete()
+                .uri("/api/users/firebase/{firebaseUid}", firebaseUid)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
+                    throw new UpstreamErrorException(response.getStatusCode(), "No fue posible eliminar el usuario");
+                })
+                .toBodilessEntity();
     }
 
 }

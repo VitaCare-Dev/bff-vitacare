@@ -3,6 +3,7 @@ package com.grupo10.bff_vitacare.controller;
 import java.util.List;
 
 import com.grupo10.bff_vitacare.client.PatientServiceClient;
+import com.grupo10.bff_vitacare.client.UserServiceClient;
 import com.grupo10.bff_vitacare.dto.DiseaseDto;
 import com.grupo10.bff_vitacare.dto.MedicalThresholdDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
@@ -27,10 +28,13 @@ public class PatientProfileController {
 
     private final PatientContextService patientContextService;
     private final PatientServiceClient patientServiceClient;
+    private final UserServiceClient userServiceClient;
 
-    public PatientProfileController(PatientContextService patientContextService, PatientServiceClient patientServiceClient) {
+    public PatientProfileController(PatientContextService patientContextService, PatientServiceClient patientServiceClient,
+                                     UserServiceClient userServiceClient) {
         this.patientContextService = patientContextService;
         this.patientServiceClient = patientServiceClient;
+        this.userServiceClient = userServiceClient;
     }
 
     @GetMapping
@@ -61,6 +65,7 @@ public class PatientProfileController {
     public ResponseEntity<Void> deleteCurrentPatient(@AuthenticationPrincipal Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
         patientServiceClient.deletePatient(patient.getIdPaciente());
+        userServiceClient.deleteUserByFirebaseUid(jwt.getSubject());
         return ResponseEntity.noContent().build();
     }
 
