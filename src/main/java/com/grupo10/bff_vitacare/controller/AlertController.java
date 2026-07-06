@@ -23,26 +23,54 @@ public class AlertController {
 
     private final AiAlertOrchestrationService aiAlertOrchestrationService;
 
+    /**
+     * @param aiAlertOrchestrationService servicio que orquesta alertas y recomendaciones de IA
+     */
     public AlertController(AiAlertOrchestrationService aiAlertOrchestrationService) {
         this.aiAlertOrchestrationService = aiAlertOrchestrationService;
     }
 
+    /**
+     * {@code GET /api/alerts}: lista todas las alertas de IA del paciente autenticado.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con las alertas del paciente
+     */
     @GetMapping
     public ResponseEntity<List<AlertaDto>> getAlerts(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(aiAlertOrchestrationService.getAlertas(jwt));
     }
 
+    /**
+     * {@code GET /api/alerts/unread}: lista las alertas de IA no leídas del paciente autenticado.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con las alertas no leídas del paciente
+     */
     @GetMapping("/unread")
     public ResponseEntity<List<AlertaDto>> getUnreadAlerts(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(aiAlertOrchestrationService.getAlertasNoLeidas(jwt));
     }
 
+    /**
+     * {@code PUT /api/alerts/{id}/read}: marca una alerta como leída.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param id  identificador de la alerta
+     * @return 204 sin contenido
+     */
     @PutMapping("/{id}/read")
     public ResponseEntity<Void> markAlertAsRead(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
         aiAlertOrchestrationService.marcarAlertaLeida(jwt, id);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * {@code PUT /api/alerts/read-all}: marca todas las alertas del paciente autenticado como leídas.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 204 sin contenido
+     */
     @PutMapping("/read-all")
     public ResponseEntity<Void> markAllAlertsAsRead(@AuthenticationPrincipal Jwt jwt) {
         aiAlertOrchestrationService.marcarTodasAlertasLeidas(jwt);

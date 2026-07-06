@@ -18,6 +18,10 @@ public class PatientDiseaseService {
     private final PatientContextService patientContextService;
     private final PatientServiceClient patientServiceClient;
 
+    /**
+     * @param patientContextService servicio que resuelve el paciente a partir del token
+     * @param patientServiceClient  cliente hacia {@code patient-service}
+     */
     public PatientDiseaseService(PatientContextService patientContextService, PatientServiceClient patientServiceClient) {
         this.patientContextService = patientContextService;
         this.patientServiceClient = patientServiceClient;

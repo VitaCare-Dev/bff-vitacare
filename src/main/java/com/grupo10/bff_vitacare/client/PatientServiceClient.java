@@ -28,6 +28,10 @@ public class PatientServiceClient {
 
     private final RestClient restClient;
 
+    /**
+     * @param restClientBuilder      builder de {@link RestClient} inyectado por Spring
+     * @param patientServiceBaseUrl  URL base de {@code patient-service}
+     */
     public PatientServiceClient(RestClient.Builder restClientBuilder,
                                  @Value("${patient-service.base-url}") String patientServiceBaseUrl) {
         this.restClient = restClientBuilder.baseUrl(patientServiceBaseUrl).build();

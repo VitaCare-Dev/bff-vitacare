@@ -30,6 +30,11 @@ public class PatientProfileController {
     private final PatientServiceClient patientServiceClient;
     private final UserServiceClient userServiceClient;
 
+    /**
+     * @param patientContextService servicio que resuelve el paciente a partir del token
+     * @param patientServiceClient  cliente hacia {@code patient-service}
+     * @param userServiceClient     cliente hacia {@code user-service}
+     */
     public PatientProfileController(PatientContextService patientContextService, PatientServiceClient patientServiceClient,
                                      UserServiceClient userServiceClient) {
         this.patientContextService = patientContextService;
@@ -37,23 +42,51 @@ public class PatientProfileController {
         this.userServiceClient = userServiceClient;
     }
 
+    /**
+     * {@code GET /api/patients/me}: devuelve el perfil del paciente autenticado.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con los datos del paciente
+     */
     @GetMapping
     public ResponseEntity<PatientDto> getCurrentPatient(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(patientContextService.resolveCurrentPatient(jwt));
     }
 
+    /**
+     * {@code GET /api/patients/me/thresholds}: devuelve los umbrales médicos
+     * derivados de la(s) enfermedad(es) crónica(s) del paciente autenticado.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con los umbrales médicos
+     */
     @GetMapping("/thresholds")
     public ResponseEntity<MedicalThresholdDto> getCurrentPatientThresholds(@AuthenticationPrincipal Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
         return ResponseEntity.ok(patientServiceClient.getThresholds(patient.getIdPaciente()));
     }
 
+    /**
+     * {@code GET /api/patients/me/diseases}: lista las enfermedades crónicas
+     * del paciente autenticado.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con las enfermedades del paciente
+     */
     @GetMapping("/diseases")
     public ResponseEntity<List<DiseaseDto>> getCurrentPatientDiseases(@AuthenticationPrincipal Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
         return ResponseEntity.ok(patientServiceClient.getPatientDiseases(patient.getIdPaciente()));
     }
 
+    /**
+     * {@code PUT /api/patients/me}: actualiza parcialmente los datos del
+     * paciente autenticado.
+     *
+     * @param jwt     ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param request campos a actualizar
+     * @return 200 con el paciente actualizado
+     */
     @PutMapping
     public ResponseEntity<PatientDto> updateCurrentPatient(@AuthenticationPrincipal Jwt jwt,
                                                             @RequestBody UpdatePatientRequestDto request) {
@@ -61,6 +94,14 @@ public class PatientProfileController {
         return ResponseEntity.ok(patientServiceClient.updatePatient(patient.getIdPaciente(), request));
     }
 
+    /**
+     * {@code DELETE /api/patients/me}: elimina la cuenta del paciente
+     * autenticado, primero en {@code patient-service} (cuya base de datos cae
+     * en cascada hacia sus datos asociados) y luego en {@code user-service}.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 204 sin contenido
+     */
     @DeleteMapping
     public ResponseEntity<Void> deleteCurrentPatient(@AuthenticationPrincipal Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);

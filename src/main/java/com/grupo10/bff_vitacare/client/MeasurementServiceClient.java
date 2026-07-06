@@ -25,11 +25,23 @@ public class MeasurementServiceClient {
 
     private final RestClient restClient;
 
+    /**
+     * @param restClientBuilder          builder de {@link RestClient} inyectado por Spring
+     * @param measurementServiceBaseUrl  URL base de {@code measurement-service}
+     */
     public MeasurementServiceClient(RestClient.Builder restClientBuilder,
                                      @Value("${measurement-service.base-url}") String measurementServiceBaseUrl) {
         this.restClient = restClientBuilder.baseUrl(measurementServiceBaseUrl).build();
     }
 
+    /**
+     * Registra una medición de glucosa para el paciente indicado.
+     *
+     * @param idPaciente identificador del paciente
+     * @param datos      datos de la medición
+     * @return la medición creada
+     * @throws UpstreamErrorException si {@code measurement-service} rechaza el registro
+     */
     public GlucoseDto createGlucose(Long idPaciente, GlucoseRequestDto datos) {
         return restClient.post()
                 .uri("/api/glucose")
@@ -41,6 +53,12 @@ public class MeasurementServiceClient {
                 .body(GlucoseDto.class);
     }
 
+    /**
+     * Lista el historial de mediciones de glucosa de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return las mediciones de glucosa del paciente (vacía si no tiene ninguna)
+     */
     public List<GlucoseDto> listGlucoseByPatient(Long idPaciente) {
         return restClient.get()
                 .uri("/api/glucose/patient/{idPaciente}", idPaciente)
@@ -49,6 +67,13 @@ public class MeasurementServiceClient {
                 });
     }
 
+    /**
+     * Obtiene la medición de glucosa más reciente de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return la última medición de glucosa
+     * @throws UpstreamErrorException si el paciente no tiene mediciones registradas
+     */
     public GlucoseDto getLatestGlucose(Long idPaciente) {
         return restClient.get()
                 .uri("/api/glucose/patient/{idPaciente}/latest", idPaciente)
@@ -59,6 +84,14 @@ public class MeasurementServiceClient {
                 .body(GlucoseDto.class);
     }
 
+    /**
+     * Registra un perfil lipídico para el paciente indicado.
+     *
+     * @param idPaciente identificador del paciente
+     * @param datos      datos del perfil lipídico
+     * @return el perfil lipídico creado
+     * @throws UpstreamErrorException si {@code measurement-service} rechaza el registro
+     */
     public LipidsDto createLipids(Long idPaciente, LipidsRequestDto datos) {
         return restClient.post()
                 .uri("/api/lipids")
@@ -70,6 +103,12 @@ public class MeasurementServiceClient {
                 .body(LipidsDto.class);
     }
 
+    /**
+     * Lista el historial de perfiles lipídicos de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return los perfiles lipídicos del paciente (vacía si no tiene ninguno)
+     */
     public List<LipidsDto> listLipidsByPatient(Long idPaciente) {
         return restClient.get()
                 .uri("/api/lipids/patient/{idPaciente}", idPaciente)
@@ -78,6 +117,13 @@ public class MeasurementServiceClient {
                 });
     }
 
+    /**
+     * Obtiene el perfil lipídico más reciente de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return el último perfil lipídico
+     * @throws UpstreamErrorException si el paciente no tiene mediciones registradas
+     */
     public LipidsDto getLatestLipids(Long idPaciente) {
         return restClient.get()
                 .uri("/api/lipids/patient/{idPaciente}/latest", idPaciente)
@@ -88,6 +134,14 @@ public class MeasurementServiceClient {
                 .body(LipidsDto.class);
     }
 
+    /**
+     * Registra signos vitales para el paciente indicado.
+     *
+     * @param idPaciente identificador del paciente
+     * @param datos      datos de los signos vitales
+     * @return la medición creada
+     * @throws UpstreamErrorException si {@code measurement-service} rechaza el registro
+     */
     public VitalsDto createVitals(Long idPaciente, VitalsRequestDto datos) {
         return restClient.post()
                 .uri("/api/vitals")
@@ -99,6 +153,12 @@ public class MeasurementServiceClient {
                 .body(VitalsDto.class);
     }
 
+    /**
+     * Lista el historial de signos vitales de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return las mediciones de signos vitales del paciente (vacía si no tiene ninguna)
+     */
     public List<VitalsDto> listVitalsByPatient(Long idPaciente) {
         return restClient.get()
                 .uri("/api/vitals/patient/{idPaciente}", idPaciente)
@@ -107,6 +167,13 @@ public class MeasurementServiceClient {
                 });
     }
 
+    /**
+     * Obtiene la medición de signos vitales más reciente de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return la última medición de signos vitales
+     * @throws UpstreamErrorException si el paciente no tiene mediciones registradas
+     */
     public VitalsDto getLatestVitals(Long idPaciente) {
         return restClient.get()
                 .uri("/api/vitals/patient/{idPaciente}/latest", idPaciente)
@@ -117,6 +184,13 @@ public class MeasurementServiceClient {
                 .body(VitalsDto.class);
     }
 
+    /**
+     * Lista el historial combinado de controles de salud (glucosa, lípidos y
+     * signos vitales agrupados por control) de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return el historial de controles del paciente
+     */
     public List<HealthControlDto> getHealthHistory(Long idPaciente) {
         return restClient.get()
                 .uri("/api/controls/patient/{idPaciente}", idPaciente)
@@ -125,6 +199,13 @@ public class MeasurementServiceClient {
                 });
     }
 
+    /**
+     * Busca una medición de glucosa por su identificador de control.
+     *
+     * @param idControl identificador del control
+     * @return la medición de glucosa encontrada
+     * @throws UpstreamErrorException si no existe
+     */
     public GlucoseDto getGlucoseById(Long idControl) {
         return restClient.get()
                 .uri("/api/glucose/{idControl}", idControl)
@@ -135,6 +216,12 @@ public class MeasurementServiceClient {
                 .body(GlucoseDto.class);
     }
 
+    /**
+     * Elimina una medición de glucosa.
+     *
+     * @param idControl identificador del control a eliminar
+     * @throws UpstreamErrorException si {@code measurement-service} rechaza la eliminación
+     */
     public void deleteGlucose(Long idControl) {
         restClient.delete()
                 .uri("/api/glucose/{idControl}", idControl)
@@ -145,6 +232,13 @@ public class MeasurementServiceClient {
                 .toBodilessEntity();
     }
 
+    /**
+     * Busca un perfil lipídico por su identificador de control.
+     *
+     * @param idControl identificador del control
+     * @return el perfil lipídico encontrado
+     * @throws UpstreamErrorException si no existe
+     */
     public LipidsDto getLipidsById(Long idControl) {
         return restClient.get()
                 .uri("/api/lipids/{idControl}", idControl)
@@ -155,6 +249,12 @@ public class MeasurementServiceClient {
                 .body(LipidsDto.class);
     }
 
+    /**
+     * Elimina un perfil lipídico.
+     *
+     * @param idControl identificador del control a eliminar
+     * @throws UpstreamErrorException si {@code measurement-service} rechaza la eliminación
+     */
     public void deleteLipids(Long idControl) {
         restClient.delete()
                 .uri("/api/lipids/{idControl}", idControl)
@@ -165,6 +265,13 @@ public class MeasurementServiceClient {
                 .toBodilessEntity();
     }
 
+    /**
+     * Busca una medición de signos vitales por su identificador de control.
+     *
+     * @param idControl identificador del control
+     * @return la medición de signos vitales encontrada
+     * @throws UpstreamErrorException si no existe
+     */
     public VitalsDto getVitalsById(Long idControl) {
         return restClient.get()
                 .uri("/api/vitals/{idControl}", idControl)
@@ -175,6 +282,12 @@ public class MeasurementServiceClient {
                 .body(VitalsDto.class);
     }
 
+    /**
+     * Elimina una medición de signos vitales.
+     *
+     * @param idControl identificador del control a eliminar
+     * @throws UpstreamErrorException si {@code measurement-service} rechaza la eliminación
+     */
     public void deleteVitals(Long idControl) {
         restClient.delete()
                 .uri("/api/vitals/{idControl}", idControl)

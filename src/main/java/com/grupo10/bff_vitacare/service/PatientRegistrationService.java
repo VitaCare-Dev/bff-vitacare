@@ -22,6 +22,10 @@ public class PatientRegistrationService {
     private final UserServiceClient userServiceClient;
     private final PatientServiceClient patientServiceClient;
 
+    /**
+     * @param userServiceClient    cliente hacia {@code user-service}
+     * @param patientServiceClient cliente hacia {@code patient-service}
+     */
     public PatientRegistrationService(UserServiceClient userServiceClient, PatientServiceClient patientServiceClient) {
         this.userServiceClient = userServiceClient;
         this.patientServiceClient = patientServiceClient;
@@ -50,6 +54,13 @@ public class PatientRegistrationService {
         return toResponse(user, patient);
     }
 
+    /**
+     * Combina los datos del usuario y del paciente recién creados en un único DTO de respuesta.
+     *
+     * @param user    usuario sincronizado
+     * @param patient paciente creado
+     * @return el DTO combinado para el cliente
+     */
     private RegisterPatientResponseDto toResponse(AuthenticatedUserDto user, PatientDto patient) {
         RegisterPatientResponseDto response = new RegisterPatientResponseDto();
         response.setIdUsuario(user.getId());

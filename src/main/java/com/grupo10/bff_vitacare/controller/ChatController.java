@@ -23,11 +23,22 @@ public class ChatController {
     private final AuthContextService authContextService;
     private final ChatbotServiceClient chatbotServiceClient;
 
+    /**
+     * @param authContextService   servicio que resuelve el usuario a partir del token
+     * @param chatbotServiceClient cliente hacia {@code chatbot-service}
+     */
     public ChatController(AuthContextService authContextService, ChatbotServiceClient chatbotServiceClient) {
         this.authContextService = authContextService;
         this.chatbotServiceClient = chatbotServiceClient;
     }
 
+    /**
+     * {@code POST /api/chat}: envía un mensaje del usuario autenticado al chatbot IA.
+     *
+     * @param jwt     ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param request mensaje a enviar
+     * @return 200 con la respuesta generada por el chatbot
+     */
     @PostMapping
     public ResponseEntity<ChatMessageResponseDto> sendMessage(@AuthenticationPrincipal Jwt jwt,
                                                                @RequestBody ChatMessageRequestDto request) {

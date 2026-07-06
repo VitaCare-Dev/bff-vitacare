@@ -6,6 +6,9 @@ package com.grupo10.bff_vitacare.exception;
  */
 public class PatientNotFoundException extends RuntimeException {
 
+    /**
+     * @param message detalle del error, propagado tal cual al cliente
+     */
     public PatientNotFoundException(String message) {
         super(message);
     }

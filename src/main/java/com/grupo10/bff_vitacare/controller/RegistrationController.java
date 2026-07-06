@@ -21,10 +21,21 @@ public class RegistrationController {
 
     private final PatientRegistrationService patientRegistrationService;
 
+    /**
+     * @param patientRegistrationService servicio que orquesta el registro de pacientes
+     */
     public RegistrationController(PatientRegistrationService patientRegistrationService) {
         this.patientRegistrationService = patientRegistrationService;
     }
 
+    /**
+     * {@code POST /api/auth/register}: registra (o continúa el registro de) el
+     * paciente asociado al usuario autenticado.
+     *
+     * @param jwt     ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param request datos del paciente a registrar
+     * @return 201 con los datos combinados de usuario y paciente creados
+     */
     @PostMapping("/register")
     public ResponseEntity<RegisterPatientResponseDto> register(@AuthenticationPrincipal Jwt jwt,
                                                                  @RequestBody RegisterPatientRequestDto request) {

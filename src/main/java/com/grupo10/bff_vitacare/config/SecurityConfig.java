@@ -34,6 +34,10 @@ public class SecurityConfig {
 
     private final String firebaseProjectId;
 
+    /**
+     * @param firebaseProjectId id del proyecto de Firebase contra el que se valida
+     *                          el issuer y la audiencia de los ID Tokens recibidos
+     */
     public SecurityConfig(@Value("${firebase.project-id}") String firebaseProjectId) {
         this.firebaseProjectId = firebaseProjectId;
     }
@@ -67,6 +71,16 @@ public class SecurityConfig {
         return jwtDecoder;
     }
 
+    /**
+     * Define la cadena de filtros de seguridad: habilita CORS, deshabilita CSRF
+     * (API sin estado consumida por un cliente móvil, no por un navegador con
+     * sesión), exige autenticación JWT en {@code /api/**} y deja el resto de
+     * rutas abiertas.
+     *
+     * @param http builder de configuración HTTP de Spring Security
+     * @return la cadena de filtros de seguridad ya construida
+     * @throws Exception si Spring Security falla al construir la configuración
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -81,6 +95,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Construye la política CORS aplicada a {@code /api/**}: permite cualquier
+     * origen (la app móvil no envía cookies ni credenciales de navegador) y los
+     * métodos HTTP usados por la API.
+     *
+     * @return la fuente de configuración CORS para las rutas de la API
+     */
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));

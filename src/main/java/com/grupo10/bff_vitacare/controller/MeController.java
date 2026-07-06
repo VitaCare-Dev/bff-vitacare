@@ -20,10 +20,19 @@ public class MeController {
 
     private final AuthContextService authContextService;
 
+    /**
+     * @param authContextService servicio que resuelve el usuario a partir del token
+     */
     public MeController(AuthContextService authContextService) {
         this.authContextService = authContextService;
     }
 
+    /**
+     * {@code GET /api/me}: devuelve los datos del usuario autenticado.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con los datos del usuario autenticado
+     */
     @GetMapping("/me")
     public ResponseEntity<AuthenticatedUserDto> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
         AuthenticatedUserDto user = authContextService.resolveCurrentUser(jwt);

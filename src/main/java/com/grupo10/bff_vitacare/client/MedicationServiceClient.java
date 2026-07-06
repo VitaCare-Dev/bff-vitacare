@@ -21,11 +21,23 @@ public class MedicationServiceClient {
 
     private final RestClient restClient;
 
+    /**
+     * @param restClientBuilder         builder de {@link RestClient} inyectado por Spring
+     * @param medicationServiceBaseUrl  URL base de {@code medication-service}
+     */
     public MedicationServiceClient(RestClient.Builder restClientBuilder,
                                     @Value("${medication-service.base-url}") String medicationServiceBaseUrl) {
         this.restClient = restClientBuilder.baseUrl(medicationServiceBaseUrl).build();
     }
 
+    /**
+     * Registra un medicamento para el paciente indicado.
+     *
+     * @param idPaciente identificador del paciente
+     * @param datos      datos del medicamento
+     * @return el medicamento creado
+     * @throws UpstreamErrorException si {@code medication-service} rechaza el registro
+     */
     public MedicationDto createMedication(Long idPaciente, MedicationRequestDto datos) {
         return restClient.post()
                 .uri("/api/medications")
@@ -37,6 +49,13 @@ public class MedicationServiceClient {
                 .body(MedicationDto.class);
     }
 
+    /**
+     * Busca un medicamento por su identificador.
+     *
+     * @param idMedicamento identificador del medicamento
+     * @return el medicamento encontrado
+     * @throws UpstreamErrorException si no existe
+     */
     public MedicationDto getById(Long idMedicamento) {
         return restClient.get()
                 .uri("/api/medications/{id}", idMedicamento)
@@ -47,6 +66,12 @@ public class MedicationServiceClient {
                 .body(MedicationDto.class);
     }
 
+    /**
+     * Lista todos los medicamentos (activos e inactivos) de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return los medicamentos del paciente (vacía si no tiene ninguno)
+     */
     public List<MedicationDto> listByPatient(Long idPaciente) {
         return restClient.get()
                 .uri("/api/medications/patient/{idPaciente}", idPaciente)
@@ -55,6 +80,12 @@ public class MedicationServiceClient {
                 });
     }
 
+    /**
+     * Lista únicamente los medicamentos activos de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return los medicamentos activos del paciente (vacía si no tiene ninguno)
+     */
     public List<MedicationDto> listActiveByPatient(Long idPaciente) {
         return restClient.get()
                 .uri("/api/medications/patient/{idPaciente}/active", idPaciente)
@@ -63,6 +94,13 @@ public class MedicationServiceClient {
                 });
     }
 
+    /**
+     * Desactiva un medicamento (fin de tratamiento), sin eliminarlo.
+     *
+     * @param idMedicamento identificador del medicamento
+     * @return el medicamento ya desactivado
+     * @throws UpstreamErrorException si {@code medication-service} rechaza la desactivación
+     */
     public MedicationDto deactivate(Long idMedicamento) {
         return restClient.patch()
                 .uri("/api/medications/{id}/deactivate", idMedicamento)
@@ -73,6 +111,12 @@ public class MedicationServiceClient {
                 .body(MedicationDto.class);
     }
 
+    /**
+     * Elimina un medicamento.
+     *
+     * @param idMedicamento identificador del medicamento a eliminar
+     * @throws UpstreamErrorException si {@code medication-service} rechaza la eliminación
+     */
     public void delete(Long idMedicamento) {
         restClient.delete()
                 .uri("/api/medications/{id}", idMedicamento)

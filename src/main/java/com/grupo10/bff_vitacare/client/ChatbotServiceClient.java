@@ -17,6 +17,10 @@ public class ChatbotServiceClient {
 
     private final RestClient restClient;
 
+    /**
+     * @param restClientBuilder       builder de {@link RestClient} inyectado por Spring
+     * @param chatbotServiceBaseUrl   URL base de {@code chatbot-service}
+     */
     public ChatbotServiceClient(RestClient.Builder restClientBuilder,
                                  @Value("${chatbot-service.base-url}") String chatbotServiceBaseUrl) {
         this.restClient = restClientBuilder.baseUrl(chatbotServiceBaseUrl).build();

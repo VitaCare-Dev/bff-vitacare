@@ -20,10 +20,21 @@ public class PatientDiseaseController {
 
     private final PatientDiseaseService patientDiseaseService;
 
+    /**
+     * @param patientDiseaseService servicio que orquesta la asociación de enfermedades
+     */
     public PatientDiseaseController(PatientDiseaseService patientDiseaseService) {
         this.patientDiseaseService = patientDiseaseService;
     }
 
+    /**
+     * {@code POST /api/patients/me/diseases}: asocia una enfermedad crónica al
+     * paciente autenticado.
+     *
+     * @param jwt     ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param request enfermedad a asociar
+     * @return 201 sin contenido
+     */
     @PostMapping("/diseases")
     public ResponseEntity<Void> registerDisease(@AuthenticationPrincipal Jwt jwt,
                                                  @RequestBody RegisterDiseaseRequestDto request) {

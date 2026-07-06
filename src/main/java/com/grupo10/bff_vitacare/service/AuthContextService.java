@@ -14,6 +14,9 @@ public class AuthContextService {
 
     private final UserServiceClient userServiceClient;
 
+    /**
+     * @param userServiceClient cliente hacia {@code user-service}
+     */
     public AuthContextService(UserServiceClient userServiceClient) {
         this.userServiceClient = userServiceClient;
     }

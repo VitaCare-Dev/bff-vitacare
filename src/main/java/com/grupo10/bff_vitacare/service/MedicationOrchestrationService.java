@@ -26,17 +26,35 @@ public class MedicationOrchestrationService {
     private final PatientContextService patientContextService;
     private final MedicationServiceClient medicationServiceClient;
 
+    /**
+     * @param patientContextService    servicio que resuelve el paciente a partir del token
+     * @param medicationServiceClient  cliente hacia {@code medication-service}
+     */
     public MedicationOrchestrationService(PatientContextService patientContextService,
                                            MedicationServiceClient medicationServiceClient) {
         this.patientContextService = patientContextService;
         this.medicationServiceClient = medicationServiceClient;
     }
 
+    /**
+     * Registra un medicamento para el paciente autenticado.
+     *
+     * @param jwt     ID Token de Firebase ya validado
+     * @param request datos del medicamento
+     * @return el medicamento creado
+     */
     public MedicationDto createMedication(Jwt jwt, MedicationRequestDto request) {
         Long idPaciente = resolvePatientId(jwt);
         return medicationServiceClient.createMedication(idPaciente, request);
     }
 
+    /**
+     * Lista los medicamentos del paciente autenticado.
+     *
+     * @param jwt        ID Token de Firebase ya validado
+     * @param onlyActive si es {@code true}, solo devuelve los medicamentos activos
+     * @return los medicamentos del paciente
+     */
     public List<MedicationDto> listMedications(Jwt jwt, boolean onlyActive) {
         Long idPaciente = resolvePatientId(jwt);
         return onlyActive
@@ -44,16 +62,38 @@ public class MedicationOrchestrationService {
                 : medicationServiceClient.listByPatient(idPaciente);
     }
 
+    /**
+     * Desactiva un medicamento del paciente autenticado, verificando antes que le pertenezca.
+     *
+     * @param jwt           ID Token de Firebase ya validado
+     * @param idMedicamento identificador del medicamento
+     * @return el medicamento ya desactivado
+     * @throws UpstreamErrorException si el medicamento no existe o pertenece a otro paciente
+     */
     public MedicationDto deactivateMedication(Jwt jwt, Long idMedicamento) {
         assertOwnedByCurrentPatient(jwt, idMedicamento);
         return medicationServiceClient.deactivate(idMedicamento);
     }
 
+    /**
+     * Elimina un medicamento del paciente autenticado, verificando antes que le pertenezca.
+     *
+     * @param jwt           ID Token de Firebase ya validado
+     * @param idMedicamento identificador del medicamento a eliminar
+     * @throws UpstreamErrorException si el medicamento no existe o pertenece a otro paciente
+     */
     public void deleteMedication(Jwt jwt, Long idMedicamento) {
         assertOwnedByCurrentPatient(jwt, idMedicamento);
         medicationServiceClient.delete(idMedicamento);
     }
 
+    /**
+     * Verifica que un medicamento pertenezca al paciente autenticado.
+     *
+     * @param jwt           ID Token de Firebase ya validado
+     * @param idMedicamento identificador del medicamento a verificar
+     * @throws UpstreamErrorException si el medicamento no existe o pertenece a otro paciente
+     */
     private void assertOwnedByCurrentPatient(Jwt jwt, Long idMedicamento) {
         Long idPaciente = resolvePatientId(jwt);
         MedicationDto medication = medicationServiceClient.getById(idMedicamento);
@@ -62,6 +102,12 @@ public class MedicationOrchestrationService {
         }
     }
 
+    /**
+     * Resuelve el identificador de paciente asociado al token autenticado.
+     *
+     * @param jwt ID Token de Firebase ya validado
+     * @return el identificador del paciente
+     */
     private Long resolvePatientId(Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
         return patient.getIdPaciente();

@@ -22,6 +22,10 @@ public class UserServiceClient {
 
     private final RestClient restClient;
 
+    /**
+     * @param restClientBuilder   builder de {@link RestClient} inyectado por Spring
+     * @param userServiceBaseUrl  URL base de {@code user-service}
+     */
     public UserServiceClient(RestClient.Builder restClientBuilder,
                               @Value("${user-service.base-url}") String userServiceBaseUrl) {
         this.restClient = restClientBuilder.baseUrl(userServiceBaseUrl).build();

@@ -11,11 +11,18 @@ public class UpstreamErrorException extends RuntimeException {
 
     private final HttpStatusCode status;
 
+    /**
+     * @param status  código de estado HTTP devuelto por el microservicio ascendente
+     * @param message detalle del error, propagado tal cual al cliente
+     */
     public UpstreamErrorException(HttpStatusCode status, String message) {
         super(message);
         this.status = status;
     }
 
+    /**
+     * @return el código de estado HTTP original devuelto por el microservicio ascendente
+     */
     public HttpStatusCode getStatus() {
         return status;
     }

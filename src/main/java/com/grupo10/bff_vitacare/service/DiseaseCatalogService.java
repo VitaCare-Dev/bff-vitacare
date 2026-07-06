@@ -14,10 +14,18 @@ public class DiseaseCatalogService {
 
     private final PatientServiceClient patientServiceClient;
 
+    /**
+     * @param patientServiceClient cliente hacia {@code patient-service}
+     */
     public DiseaseCatalogService(PatientServiceClient patientServiceClient) {
         this.patientServiceClient = patientServiceClient;
     }
 
+    /**
+     * Lista el catálogo completo de enfermedades crónicas disponibles.
+     *
+     * @return el catálogo de enfermedades
+     */
     public List<DiseaseDto> listDiseases() {
         return patientServiceClient.listDiseases();
     }

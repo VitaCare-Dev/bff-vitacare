@@ -6,6 +6,9 @@ package com.grupo10.bff_vitacare.exception;
  */
 public class UpstreamUserNotFoundException extends RuntimeException {
 
+    /**
+     * @param message detalle del error, propagado tal cual al cliente
+     */
     public UpstreamUserNotFoundException(String message) {
         super(message);
     }

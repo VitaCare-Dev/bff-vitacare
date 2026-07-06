@@ -6,6 +6,9 @@ package com.grupo10.bff_vitacare.exception;
  */
 public class RegistrationConflictException extends RuntimeException {
 
+    /**
+     * @param message detalle del conflicto, propagado tal cual al cliente
+     */
     public RegistrationConflictException(String message) {
         super(message);
     }
