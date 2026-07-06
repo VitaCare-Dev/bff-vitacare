@@ -33,18 +33,21 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final String firebaseProjectId;
+    private final String firebaseJwkSetUri;
 
     /**
      * @param firebaseProjectId id del proyecto de Firebase contra el que se valida
      *                          el issuer y la audiencia de los ID Tokens recibidos
+     * @param firebaseJwkSetUri JWKS contra el que se verifica la firma de los ID Tokens;
+     *                          por defecto, el que Google documenta para Firebase Authentication
      */
-    public SecurityConfig(@Value("${firebase.project-id}") String firebaseProjectId) {
+    public SecurityConfig(
+            @Value("${firebase.project-id}") String firebaseProjectId,
+            @Value("${firebase.jwk-set-uri:https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com}")
+            String firebaseJwkSetUri) {
         this.firebaseProjectId = firebaseProjectId;
+        this.firebaseJwkSetUri = firebaseJwkSetUri;
     }
-
-    /** JWKS público que Google documenta específicamente para verificar ID Tokens de Firebase. */
-    private static final String FIREBASE_JWK_SET_URI =
-            "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 
     /**
      * Decodificador de JWT que valida firma, issuer, expiración y audiencia
@@ -57,7 +60,7 @@ public class SecurityConfig {
     public JwtDecoder jwtDecoder() {
         String issuer = "https://securetoken.google.com/" + firebaseProjectId;
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder
-                .withJwkSetUri(FIREBASE_JWK_SET_URI)
+                .withJwkSetUri(firebaseJwkSetUri)
                 .build();
 
         OAuth2TokenValidator<Jwt> defaultValidators = JwtValidators.createDefaultWithIssuer(issuer);

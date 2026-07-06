@@ -78,6 +78,34 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.12</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<configuration>
+							<!-- Clase de arranque de Spring Boot: su main() solo delega en
+							     SpringApplication.run(), ya ejercitado indirectamente por
+							     BffVitacareApplicationTests#contextLoads sin necesitar levantar
+							     un segundo servidor embebido real solo para cubrir esa línea. -->
+							<excludes>
+								<exclude>com/grupo10/bff_vitacare/BffVitacareApplication.class</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
