@@ -1,5 +1,6 @@
 package com.grupo10.bff_vitacare.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.grupo10.bff_vitacare.dto.GlucoseDto;
@@ -7,9 +8,11 @@ import com.grupo10.bff_vitacare.dto.GlucoseRequestDto;
 import com.grupo10.bff_vitacare.dto.HealthControlDto;
 import com.grupo10.bff_vitacare.dto.LipidsDto;
 import com.grupo10.bff_vitacare.dto.LipidsRequestDto;
+import com.grupo10.bff_vitacare.dto.PageResponseDto;
 import com.grupo10.bff_vitacare.dto.VitalsDto;
 import com.grupo10.bff_vitacare.dto.VitalsRequestDto;
 import com.grupo10.bff_vitacare.service.MeasurementOrchestrationService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -53,14 +57,24 @@ public class MeasurementController {
     }
 
     /**
-     * {@code GET /api/measurements/glucose}: lista el historial de mediciones de glucosa.
+     * {@code GET /api/measurements/glucose}: lista el historial paginado de
+     * mediciones de glucosa, opcionalmente acotado a un rango de fechas.
      *
-     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
-     * @return 200 con las mediciones de glucosa del paciente
+     * @param jwt   ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param page  número de página solicitado (base 0)
+     * @param size  tamaño de página solicitado
+     * @param desde fecha inicial (inclusive) del rango, en formato {@code yyyy-MM-dd}
+     * @param hasta fecha final (inclusive) del rango, en formato {@code yyyy-MM-dd}
+     * @return 200 con la página de mediciones de glucosa del paciente
      */
     @GetMapping("/glucose")
-    public ResponseEntity<List<GlucoseDto>> listGlucose(@AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(measurementOrchestrationService.listGlucose(jwt));
+    public ResponseEntity<PageResponseDto<GlucoseDto>> listGlucose(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(measurementOrchestrationService.listGlucose(jwt, page, size, desde, hasta));
     }
 
     /**
@@ -114,14 +128,24 @@ public class MeasurementController {
     }
 
     /**
-     * {@code GET /api/measurements/lipids}: lista el historial de perfiles lipídicos.
+     * {@code GET /api/measurements/lipids}: lista el historial paginado de
+     * perfiles lipídicos, opcionalmente acotado a un rango de fechas.
      *
-     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
-     * @return 200 con los perfiles lipídicos del paciente
+     * @param jwt   ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param page  número de página solicitado (base 0)
+     * @param size  tamaño de página solicitado
+     * @param desde fecha inicial (inclusive) del rango, en formato {@code yyyy-MM-dd}
+     * @param hasta fecha final (inclusive) del rango, en formato {@code yyyy-MM-dd}
+     * @return 200 con la página de perfiles lipídicos del paciente
      */
     @GetMapping("/lipids")
-    public ResponseEntity<List<LipidsDto>> listLipids(@AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(measurementOrchestrationService.listLipids(jwt));
+    public ResponseEntity<PageResponseDto<LipidsDto>> listLipids(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(measurementOrchestrationService.listLipids(jwt, page, size, desde, hasta));
     }
 
     /**
@@ -175,14 +199,24 @@ public class MeasurementController {
     }
 
     /**
-     * {@code GET /api/measurements/vitals}: lista el historial de signos vitales.
+     * {@code GET /api/measurements/vitals}: lista el historial paginado de
+     * signos vitales, opcionalmente acotado a un rango de fechas.
      *
-     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
-     * @return 200 con las mediciones de signos vitales del paciente
+     * @param jwt   ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param page  número de página solicitado (base 0)
+     * @param size  tamaño de página solicitado
+     * @param desde fecha inicial (inclusive) del rango, en formato {@code yyyy-MM-dd}
+     * @param hasta fecha final (inclusive) del rango, en formato {@code yyyy-MM-dd}
+     * @return 200 con la página de mediciones de signos vitales del paciente
      */
     @GetMapping("/vitals")
-    public ResponseEntity<List<VitalsDto>> listVitals(@AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(measurementOrchestrationService.listVitals(jwt));
+    public ResponseEntity<PageResponseDto<VitalsDto>> listVitals(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(measurementOrchestrationService.listVitals(jwt, page, size, desde, hasta));
     }
 
     /**

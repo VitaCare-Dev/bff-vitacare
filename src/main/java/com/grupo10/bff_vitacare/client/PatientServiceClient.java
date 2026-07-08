@@ -177,6 +177,25 @@ public class PatientServiceClient {
     }
 
     /**
+     * Actualiza la URL de la foto de perfil de un paciente.
+     *
+     * @param idPaciente   identificador del paciente
+     * @param fotoPerfilUrl URL base del blob (sin SAS) donde quedó la foto subida
+     * @return el paciente actualizado
+     */
+    public PatientDto updatePhotoUrl(Long idPaciente, String fotoPerfilUrl) {
+        return restClient.patch()
+                .uri("/api/patients/{idPaciente}/photo", idPaciente)
+                .body(Map.of("fotoPerfilUrl", fotoPerfilUrl))
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
+                    throw new UpstreamErrorException(
+                            response.getStatusCode(), "No fue posible actualizar la foto de perfil");
+                })
+                .body(PatientDto.class);
+    }
+
+    /**
      * Crea una dirección para el paciente indicado.
      *
      * @param idPaciente identificador del paciente

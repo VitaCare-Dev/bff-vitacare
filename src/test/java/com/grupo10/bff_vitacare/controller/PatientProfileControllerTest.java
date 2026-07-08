@@ -1,6 +1,8 @@
 package com.grupo10.bff_vitacare.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,8 +11,10 @@ import com.grupo10.bff_vitacare.client.UserServiceClient;
 import com.grupo10.bff_vitacare.dto.DiseaseDto;
 import com.grupo10.bff_vitacare.dto.MedicalThresholdDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
+import com.grupo10.bff_vitacare.dto.PhotoUploadUrlDto;
 import com.grupo10.bff_vitacare.dto.UpdatePatientRequestDto;
 import com.grupo10.bff_vitacare.service.PatientContextService;
+import com.grupo10.bff_vitacare.service.ProfilePhotoService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,9 @@ class PatientProfileControllerTest {
     @Mock
     private UserServiceClient userServiceClient;
 
+    @Mock
+    private ProfilePhotoService profilePhotoService;
+
     @InjectMocks
     private PatientProfileController patientProfileController;
 
@@ -55,6 +62,53 @@ class PatientProfileControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getIdPaciente()).isEqualTo(1L);
+    }
+
+    @Test
+    void getCurrentPatientDoesNotCallProfilePhotoServiceWhenThereIsNoPhoto() {
+        when(patientContextService.resolveCurrentPatient(jwt)).thenReturn(patient);
+
+        patientProfileController.getCurrentPatient(jwt);
+
+        verify(profilePhotoService, never()).generateReadUrl(any());
+    }
+
+    @Test
+    void getCurrentPatientReplacesTheBaseUrlWithASignedReadUrlWhenThereIsAPhoto() {
+        patient.setFotoPerfilUrl("https://vitacareprofilephotos.blob.core.windows.net/profile-photos/paciente-1.jpg");
+        when(patientContextService.resolveCurrentPatient(jwt)).thenReturn(patient);
+        when(profilePhotoService.generateReadUrl(patient.getFotoPerfilUrl()))
+                .thenReturn("https://vitacareprofilephotos.blob.core.windows.net/profile-photos/paciente-1.jpg?sig=abc");
+
+        ResponseEntity<PatientDto> response = patientProfileController.getCurrentPatient(jwt);
+
+        assertThat(response.getBody().getFotoPerfilUrl()).endsWith("?sig=abc");
+    }
+
+    @Test
+    void getPhotoUploadUrlReturnsTheGeneratedUrl() {
+        when(patientContextService.resolveCurrentPatient(jwt)).thenReturn(patient);
+        when(profilePhotoService.generateUploadUrl(1L)).thenReturn("https://example.blob/upload?sig=xyz");
+
+        ResponseEntity<PhotoUploadUrlDto> response = patientProfileController.getPhotoUploadUrl(jwt);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getUploadUrl()).isEqualTo("https://example.blob/upload?sig=xyz");
+    }
+
+    @Test
+    void confirmPhotoUploadPersistsTheBaseUrlAndReturnsASignedReadUrl() {
+        when(patientContextService.resolveCurrentPatient(jwt)).thenReturn(patient);
+        when(profilePhotoService.getBaseBlobUrl(1L)).thenReturn("https://example.blob/paciente-1.jpg");
+        PatientDto updated = new PatientDto();
+        updated.setIdPaciente(1L);
+        when(patientServiceClient.updatePhotoUrl(1L, "https://example.blob/paciente-1.jpg")).thenReturn(updated);
+        when(profilePhotoService.generateReadUrl("https://example.blob/paciente-1.jpg"))
+                .thenReturn("https://example.blob/paciente-1.jpg?sig=abc");
+
+        ResponseEntity<PatientDto> response = patientProfileController.confirmPhotoUpload(jwt);
+
+        assertThat(response.getBody().getFotoPerfilUrl()).isEqualTo("https://example.blob/paciente-1.jpg?sig=abc");
     }
 
     @Test

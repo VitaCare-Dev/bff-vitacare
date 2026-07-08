@@ -9,6 +9,7 @@ import com.grupo10.bff_vitacare.dto.GlucoseRequestDto;
 import com.grupo10.bff_vitacare.dto.HealthControlDto;
 import com.grupo10.bff_vitacare.dto.LipidsDto;
 import com.grupo10.bff_vitacare.dto.LipidsRequestDto;
+import com.grupo10.bff_vitacare.dto.PageResponseDto;
 import com.grupo10.bff_vitacare.dto.VitalsDto;
 import com.grupo10.bff_vitacare.dto.VitalsRequestDto;
 import com.grupo10.bff_vitacare.service.MeasurementOrchestrationService;
@@ -47,10 +48,11 @@ class MeasurementControllerTest {
     }
 
     @Test
-    void listGlucoseReturnsTheList() {
-        when(measurementOrchestrationService.listGlucose(jwt)).thenReturn(List.of(new GlucoseDto()));
+    void listGlucoseReturnsThePage() {
+        PageResponseDto<GlucoseDto> page = new PageResponseDto<>(List.of(new GlucoseDto()), 0, 10, 1, 1);
+        when(measurementOrchestrationService.listGlucose(jwt, 0, 10, null, null)).thenReturn(page);
 
-        assertThat(measurementController.listGlucose(jwt).getBody()).hasSize(1);
+        assertThat(measurementController.listGlucose(jwt, 0, 10, null, null).getBody().getContent()).hasSize(1);
     }
 
     @Test
@@ -92,10 +94,11 @@ class MeasurementControllerTest {
     }
 
     @Test
-    void listLipidsReturnsTheList() {
-        when(measurementOrchestrationService.listLipids(jwt)).thenReturn(List.of(new LipidsDto()));
+    void listLipidsReturnsThePage() {
+        PageResponseDto<LipidsDto> page = new PageResponseDto<>(List.of(new LipidsDto()), 0, 10, 1, 1);
+        when(measurementOrchestrationService.listLipids(jwt, 0, 10, null, null)).thenReturn(page);
 
-        assertThat(measurementController.listLipids(jwt).getBody()).hasSize(1);
+        assertThat(measurementController.listLipids(jwt, 0, 10, null, null).getBody().getContent()).hasSize(1);
     }
 
     @Test
@@ -133,10 +136,11 @@ class MeasurementControllerTest {
     }
 
     @Test
-    void listVitalsReturnsTheList() {
-        when(measurementOrchestrationService.listVitals(jwt)).thenReturn(List.of(new VitalsDto()));
+    void listVitalsReturnsThePage() {
+        PageResponseDto<VitalsDto> page = new PageResponseDto<>(List.of(new VitalsDto()), 0, 10, 1, 1);
+        when(measurementOrchestrationService.listVitals(jwt, 0, 10, null, null)).thenReturn(page);
 
-        assertThat(measurementController.listVitals(jwt).getBody()).hasSize(1);
+        assertThat(measurementController.listVitals(jwt, 0, 10, null, null).getBody().getContent()).hasSize(1);
     }
 
     @Test

@@ -7,13 +7,16 @@ import com.grupo10.bff_vitacare.client.UserServiceClient;
 import com.grupo10.bff_vitacare.dto.DiseaseDto;
 import com.grupo10.bff_vitacare.dto.MedicalThresholdDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
+import com.grupo10.bff_vitacare.dto.PhotoUploadUrlDto;
 import com.grupo10.bff_vitacare.dto.UpdatePatientRequestDto;
 import com.grupo10.bff_vitacare.service.PatientContextService;
+import com.grupo10.bff_vitacare.service.ProfilePhotoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,28 +32,68 @@ public class PatientProfileController {
     private final PatientContextService patientContextService;
     private final PatientServiceClient patientServiceClient;
     private final UserServiceClient userServiceClient;
+    private final ProfilePhotoService profilePhotoService;
 
     /**
      * @param patientContextService servicio que resuelve el paciente a partir del token
      * @param patientServiceClient  cliente hacia {@code patient-service}
      * @param userServiceClient     cliente hacia {@code user-service}
+     * @param profilePhotoService   servicio que genera URLs firmadas hacia Azure Blob Storage
      */
     public PatientProfileController(PatientContextService patientContextService, PatientServiceClient patientServiceClient,
-                                     UserServiceClient userServiceClient) {
+                                     UserServiceClient userServiceClient, ProfilePhotoService profilePhotoService) {
         this.patientContextService = patientContextService;
         this.patientServiceClient = patientServiceClient;
         this.userServiceClient = userServiceClient;
+        this.profilePhotoService = profilePhotoService;
     }
 
     /**
      * {@code GET /api/patients/me}: devuelve el perfil del paciente autenticado.
+     * Si tiene foto de perfil, su URL se reemplaza por una URL firmada de
+     * lectura de corta duración antes de responder.
      *
      * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
      * @return 200 con los datos del paciente
      */
     @GetMapping
     public ResponseEntity<PatientDto> getCurrentPatient(@AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(patientContextService.resolveCurrentPatient(jwt));
+        PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
+        if (patient.getFotoPerfilUrl() != null) {
+            patient.setFotoPerfilUrl(profilePhotoService.generateReadUrl(patient.getFotoPerfilUrl()));
+        }
+        return ResponseEntity.ok(patient);
+    }
+
+    /**
+     * {@code POST /api/patients/me/photo/upload-url}: genera una URL con SAS
+     * de escritura para que el paciente suba directamente su foto de perfil
+     * a Azure Blob Storage.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con la URL de subida, válida por poco tiempo
+     */
+    @PostMapping("/photo/upload-url")
+    public ResponseEntity<PhotoUploadUrlDto> getPhotoUploadUrl(@AuthenticationPrincipal Jwt jwt) {
+        PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
+        String uploadUrl = profilePhotoService.generateUploadUrl(patient.getIdPaciente());
+        return ResponseEntity.ok(new PhotoUploadUrlDto(uploadUrl));
+    }
+
+    /**
+     * {@code PUT /api/patients/me/photo}: confirma que la foto de perfil ya
+     * se subió a Azure y guarda su URL base en {@code patient-service}.
+     *
+     * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @return 200 con el paciente actualizado (la foto ya con una URL de lectura firmada)
+     */
+    @PutMapping("/photo")
+    public ResponseEntity<PatientDto> confirmPhotoUpload(@AuthenticationPrincipal Jwt jwt) {
+        PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
+        String baseUrl = profilePhotoService.getBaseBlobUrl(patient.getIdPaciente());
+        PatientDto updated = patientServiceClient.updatePhotoUrl(patient.getIdPaciente(), baseUrl);
+        updated.setFotoPerfilUrl(profilePhotoService.generateReadUrl(baseUrl));
+        return ResponseEntity.ok(updated);
     }
 
     /**

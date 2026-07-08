@@ -13,9 +13,11 @@ import com.grupo10.bff_vitacare.dto.GlucoseRequestDto;
 import com.grupo10.bff_vitacare.dto.HealthControlDto;
 import com.grupo10.bff_vitacare.dto.LipidsDto;
 import com.grupo10.bff_vitacare.dto.LipidsRequestDto;
+import com.grupo10.bff_vitacare.dto.PageResponseDto;
 import com.grupo10.bff_vitacare.dto.VitalsDto;
 import com.grupo10.bff_vitacare.dto.VitalsRequestDto;
 import com.grupo10.bff_vitacare.exception.UpstreamErrorException;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,13 +66,30 @@ class MeasurementServiceClientTest {
     }
 
     @Test
-    void listGlucoseByPatientReturnsTheList() {
-        server.expect(requestTo("http://measurement-service/api/glucose/patient/1"))
-                .andRespond(withSuccess("[{\"idControl\":1}]", MediaType.APPLICATION_JSON));
+    void listGlucoseByPatientReturnsThePage() {
+        server.expect(requestTo("http://measurement-service/api/glucose/patient/1?page=0&size=10"))
+                .andRespond(withSuccess(
+                        "{\"content\":[{\"idControl\":1}],\"page\":0,\"size\":10,\"totalElements\":1,\"totalPages\":1}",
+                        MediaType.APPLICATION_JSON));
 
-        List<GlucoseDto> results = client.listGlucoseByPatient(1L);
+        PageResponseDto<GlucoseDto> result = client.listGlucoseByPatient(1L, 0, 10, null, null);
 
-        assertThat(results).hasSize(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void listGlucoseByPatientIncludesDateRangeWhenProvided() {
+        server.expect(requestTo(
+                        "http://measurement-service/api/glucose/patient/1?page=0&size=10&desde=2026-01-01&hasta=2026-01-31"))
+                .andRespond(withSuccess(
+                        "{\"content\":[],\"page\":0,\"size\":10,\"totalElements\":0,\"totalPages\":0}",
+                        MediaType.APPLICATION_JSON));
+
+        PageResponseDto<GlucoseDto> result = client.listGlucoseByPatient(
+                1L, 0, 10, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31));
+
+        assertThat(result.getContent()).isEmpty();
     }
 
     @Test
@@ -114,13 +133,15 @@ class MeasurementServiceClientTest {
     }
 
     @Test
-    void listLipidsByPatientReturnsTheList() {
-        server.expect(requestTo("http://measurement-service/api/lipids/patient/1"))
-                .andRespond(withSuccess("[{\"idControl\":1}]", MediaType.APPLICATION_JSON));
+    void listLipidsByPatientReturnsThePage() {
+        server.expect(requestTo("http://measurement-service/api/lipids/patient/1?page=0&size=10"))
+                .andRespond(withSuccess(
+                        "{\"content\":[{\"idControl\":1}],\"page\":0,\"size\":10,\"totalElements\":1,\"totalPages\":1}",
+                        MediaType.APPLICATION_JSON));
 
-        List<LipidsDto> results = client.listLipidsByPatient(1L);
+        PageResponseDto<LipidsDto> result = client.listLipidsByPatient(1L, 0, 10, null, null);
 
-        assertThat(results).hasSize(1);
+        assertThat(result.getContent()).hasSize(1);
     }
 
     @Test
@@ -164,13 +185,15 @@ class MeasurementServiceClientTest {
     }
 
     @Test
-    void listVitalsByPatientReturnsTheList() {
-        server.expect(requestTo("http://measurement-service/api/vitals/patient/1"))
-                .andRespond(withSuccess("[{\"idControl\":1}]", MediaType.APPLICATION_JSON));
+    void listVitalsByPatientReturnsThePage() {
+        server.expect(requestTo("http://measurement-service/api/vitals/patient/1?page=0&size=10"))
+                .andRespond(withSuccess(
+                        "{\"content\":[{\"idControl\":1}],\"page\":0,\"size\":10,\"totalElements\":1,\"totalPages\":1}",
+                        MediaType.APPLICATION_JSON));
 
-        List<VitalsDto> results = client.listVitalsByPatient(1L);
+        PageResponseDto<VitalsDto> result = client.listVitalsByPatient(1L, 0, 10, null, null);
 
-        assertThat(results).hasSize(1);
+        assertThat(result.getContent()).hasSize(1);
     }
 
     @Test

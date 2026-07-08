@@ -12,6 +12,7 @@ import com.grupo10.bff_vitacare.dto.GlucoseRequestDto;
 import com.grupo10.bff_vitacare.dto.HealthControlDto;
 import com.grupo10.bff_vitacare.dto.LipidsDto;
 import com.grupo10.bff_vitacare.dto.LipidsRequestDto;
+import com.grupo10.bff_vitacare.dto.PageResponseDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
 import com.grupo10.bff_vitacare.dto.VitalsDto;
 import com.grupo10.bff_vitacare.dto.VitalsRequestDto;
@@ -61,9 +62,10 @@ class MeasurementOrchestrationServiceTest {
 
     @Test
     void listGlucoseDelegatesToTheClient() {
-        when(measurementServiceClient.listGlucoseByPatient(1L)).thenReturn(List.of(new GlucoseDto()));
+        PageResponseDto<GlucoseDto> page = new PageResponseDto<>(List.of(new GlucoseDto()), 0, 10, 1, 1);
+        when(measurementServiceClient.listGlucoseByPatient(1L, 0, 10, null, null)).thenReturn(page);
 
-        assertThat(measurementOrchestrationService.listGlucose(jwt)).hasSize(1);
+        assertThat(measurementOrchestrationService.listGlucose(jwt, 0, 10, null, null).getContent()).hasSize(1);
     }
 
     @Test
@@ -87,9 +89,10 @@ class MeasurementOrchestrationServiceTest {
 
     @Test
     void listLipidsDelegatesToTheClient() {
-        when(measurementServiceClient.listLipidsByPatient(1L)).thenReturn(List.of(new LipidsDto()));
+        PageResponseDto<LipidsDto> page = new PageResponseDto<>(List.of(new LipidsDto()), 0, 10, 1, 1);
+        when(measurementServiceClient.listLipidsByPatient(1L, 0, 10, null, null)).thenReturn(page);
 
-        assertThat(measurementOrchestrationService.listLipids(jwt)).hasSize(1);
+        assertThat(measurementOrchestrationService.listLipids(jwt, 0, 10, null, null).getContent()).hasSize(1);
     }
 
     @Test
@@ -111,9 +114,10 @@ class MeasurementOrchestrationServiceTest {
 
     @Test
     void listVitalsDelegatesToTheClient() {
-        when(measurementServiceClient.listVitalsByPatient(1L)).thenReturn(List.of(new VitalsDto()));
+        PageResponseDto<VitalsDto> page = new PageResponseDto<>(List.of(new VitalsDto()), 0, 10, 1, 1);
+        when(measurementServiceClient.listVitalsByPatient(1L, 0, 10, null, null)).thenReturn(page);
 
-        assertThat(measurementOrchestrationService.listVitals(jwt)).hasSize(1);
+        assertThat(measurementOrchestrationService.listVitals(jwt, 0, 10, null, null).getContent()).hasSize(1);
     }
 
     @Test

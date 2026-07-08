@@ -1,5 +1,6 @@
 package com.grupo10.bff_vitacare.client;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.grupo10.bff_vitacare.dto.GlucoseDto;
@@ -7,6 +8,7 @@ import com.grupo10.bff_vitacare.dto.GlucoseRequestDto;
 import com.grupo10.bff_vitacare.dto.HealthControlDto;
 import com.grupo10.bff_vitacare.dto.LipidsDto;
 import com.grupo10.bff_vitacare.dto.LipidsRequestDto;
+import com.grupo10.bff_vitacare.dto.PageResponseDto;
 import com.grupo10.bff_vitacare.dto.VitalsDto;
 import com.grupo10.bff_vitacare.dto.VitalsRequestDto;
 import com.grupo10.bff_vitacare.exception.UpstreamErrorException;
@@ -15,6 +17,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriBuilder;
 
 /**
  * Cliente HTTP hacia {@code measurement-service}, usado para registrar y
@@ -54,16 +57,23 @@ public class MeasurementServiceClient {
     }
 
     /**
-     * Lista el historial de mediciones de glucosa de un paciente.
+     * Lista el historial paginado de mediciones de glucosa de un paciente,
+     * opcionalmente acotado a un rango de fechas.
      *
      * @param idPaciente identificador del paciente
-     * @return las mediciones de glucosa del paciente (vacía si no tiene ninguna)
+     * @param page       número de página solicitado (base 0)
+     * @param size       tamaño de página solicitado
+     * @param desde      fecha inicial (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param hasta      fecha final (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @return la página de mediciones de glucosa del paciente
      */
-    public List<GlucoseDto> listGlucoseByPatient(Long idPaciente) {
+    public PageResponseDto<GlucoseDto> listGlucoseByPatient(
+            Long idPaciente, int page, int size, LocalDate desde, LocalDate hasta) {
         return restClient.get()
-                .uri("/api/glucose/patient/{idPaciente}", idPaciente)
+                .uri(uriBuilder -> pagedHistoryUri(
+                        uriBuilder, "/api/glucose/patient/{idPaciente}", page, size, desde, hasta, idPaciente))
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<GlucoseDto>>() {
+                .body(new ParameterizedTypeReference<PageResponseDto<GlucoseDto>>() {
                 });
     }
 
@@ -104,16 +114,23 @@ public class MeasurementServiceClient {
     }
 
     /**
-     * Lista el historial de perfiles lipídicos de un paciente.
+     * Lista el historial paginado de perfiles lipídicos de un paciente,
+     * opcionalmente acotado a un rango de fechas.
      *
      * @param idPaciente identificador del paciente
-     * @return los perfiles lipídicos del paciente (vacía si no tiene ninguno)
+     * @param page       número de página solicitado (base 0)
+     * @param size       tamaño de página solicitado
+     * @param desde      fecha inicial (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param hasta      fecha final (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @return la página de perfiles lipídicos del paciente
      */
-    public List<LipidsDto> listLipidsByPatient(Long idPaciente) {
+    public PageResponseDto<LipidsDto> listLipidsByPatient(
+            Long idPaciente, int page, int size, LocalDate desde, LocalDate hasta) {
         return restClient.get()
-                .uri("/api/lipids/patient/{idPaciente}", idPaciente)
+                .uri(uriBuilder -> pagedHistoryUri(
+                        uriBuilder, "/api/lipids/patient/{idPaciente}", page, size, desde, hasta, idPaciente))
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<LipidsDto>>() {
+                .body(new ParameterizedTypeReference<PageResponseDto<LipidsDto>>() {
                 });
     }
 
@@ -154,16 +171,23 @@ public class MeasurementServiceClient {
     }
 
     /**
-     * Lista el historial de signos vitales de un paciente.
+     * Lista el historial paginado de signos vitales de un paciente,
+     * opcionalmente acotado a un rango de fechas.
      *
      * @param idPaciente identificador del paciente
-     * @return las mediciones de signos vitales del paciente (vacía si no tiene ninguna)
+     * @param page       número de página solicitado (base 0)
+     * @param size       tamaño de página solicitado
+     * @param desde      fecha inicial (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param hasta      fecha final (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @return la página de mediciones de signos vitales del paciente
      */
-    public List<VitalsDto> listVitalsByPatient(Long idPaciente) {
+    public PageResponseDto<VitalsDto> listVitalsByPatient(
+            Long idPaciente, int page, int size, LocalDate desde, LocalDate hasta) {
         return restClient.get()
-                .uri("/api/vitals/patient/{idPaciente}", idPaciente)
+                .uri(uriBuilder -> pagedHistoryUri(
+                        uriBuilder, "/api/vitals/patient/{idPaciente}", page, size, desde, hasta, idPaciente))
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<VitalsDto>>() {
+                .body(new ParameterizedTypeReference<PageResponseDto<VitalsDto>>() {
                 });
     }
 
@@ -296,6 +320,33 @@ public class MeasurementServiceClient {
                     throw new UpstreamErrorException(response.getStatusCode(), "No fue posible eliminar los signos vitales");
                 })
                 .toBodilessEntity();
+    }
+
+    /**
+     * Construye la URI de un endpoint de historial paginado, agregando los
+     * parámetros de página/tamaño y, si vienen presentes, el rango de fechas.
+     *
+     * @param uriBuilder builder de URI provisto por {@link RestClient}
+     * @param path       ruta del endpoint, con el placeholder {@code {idPaciente}}
+     * @param page       número de página solicitado (base 0)
+     * @param size       tamaño de página solicitado
+     * @param desde      fecha inicial (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param hasta      fecha final (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param idPaciente identificador del paciente, usado para completar el placeholder de la ruta
+     * @return la URI final ya construida
+     */
+    private java.net.URI pagedHistoryUri(UriBuilder uriBuilder, String path, int page, int size,
+            LocalDate desde, LocalDate hasta, Long idPaciente) {
+        uriBuilder.path(path);
+        uriBuilder.queryParam("page", page);
+        uriBuilder.queryParam("size", size);
+        if (desde != null) {
+            uriBuilder.queryParam("desde", desde);
+        }
+        if (hasta != null) {
+            uriBuilder.queryParam("hasta", hasta);
+        }
+        return uriBuilder.build(idPaciente);
     }
 
     /** Espejo de {@code GlucosaRequestDto} de {@code measurement-service}. */

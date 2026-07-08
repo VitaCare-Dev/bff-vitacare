@@ -198,6 +198,29 @@ class PatientServiceClientTest {
     }
 
     @Test
+    void updatePhotoUrlPatchesThePhotoEndpoint() {
+        server.expect(requestTo("http://patient-service/api/patients/1/photo"))
+                .andExpect(method(HttpMethod.PATCH))
+                .andExpect(jsonPath("$.fotoPerfilUrl").value("https://example.blob/paciente-1.jpg"))
+                .andRespond(withSuccess(
+                        "{\"idPaciente\":1,\"fotoPerfilUrl\":\"https://example.blob/paciente-1.jpg\"}",
+                        MediaType.APPLICATION_JSON));
+
+        PatientDto updated = client.updatePhotoUrl(1L, "https://example.blob/paciente-1.jpg");
+
+        assertThat(updated.getFotoPerfilUrl()).isEqualTo("https://example.blob/paciente-1.jpg");
+    }
+
+    @Test
+    void updatePhotoUrlThrowsOnError() {
+        server.expect(requestTo("http://patient-service/api/patients/1/photo"))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST));
+
+        assertThatThrownBy(() -> client.updatePhotoUrl(1L, "https://example.blob/paciente-1.jpg"))
+                .isInstanceOf(UpstreamErrorException.class);
+    }
+
+    @Test
     void createAddressPostsToAddressesEndpoint() {
         AddressRequestDto request = new AddressRequestDto();
         request.setCalle("Av. Providencia");

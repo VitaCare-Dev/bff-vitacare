@@ -27,4 +27,11 @@ public class PatientDto {
 
     private String telefonoSecundario;
 
+    /**
+     * URL de la foto de perfil. En {@code patient-service} se guarda como la
+     * URL base del blob (sin SAS); el BFF la reemplaza por una URL firmada de
+     * lectura de corta duración antes de devolverla al cliente.
+     */
+    private String fotoPerfilUrl;
+
 }

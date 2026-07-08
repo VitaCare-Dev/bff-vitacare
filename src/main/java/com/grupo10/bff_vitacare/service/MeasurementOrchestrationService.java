@@ -1,5 +1,6 @@
 package com.grupo10.bff_vitacare.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.grupo10.bff_vitacare.client.MeasurementServiceClient;
@@ -8,6 +9,7 @@ import com.grupo10.bff_vitacare.dto.GlucoseRequestDto;
 import com.grupo10.bff_vitacare.dto.HealthControlDto;
 import com.grupo10.bff_vitacare.dto.LipidsDto;
 import com.grupo10.bff_vitacare.dto.LipidsRequestDto;
+import com.grupo10.bff_vitacare.dto.PageResponseDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
 import com.grupo10.bff_vitacare.dto.VitalsDto;
 import com.grupo10.bff_vitacare.dto.VitalsRequestDto;
@@ -50,13 +52,18 @@ public class MeasurementOrchestrationService {
     }
 
     /**
-     * Lista el historial de mediciones de glucosa del paciente autenticado.
+     * Lista el historial paginado de mediciones de glucosa del paciente
+     * autenticado, opcionalmente acotado a un rango de fechas.
      *
-     * @param jwt ID Token de Firebase ya validado
-     * @return las mediciones de glucosa del paciente
+     * @param jwt   ID Token de Firebase ya validado
+     * @param page  número de página solicitado (base 0)
+     * @param size  tamaño de página solicitado
+     * @param desde fecha inicial (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param hasta fecha final (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @return la página de mediciones de glucosa del paciente
      */
-    public List<GlucoseDto> listGlucose(Jwt jwt) {
-        return measurementServiceClient.listGlucoseByPatient(resolvePatientId(jwt));
+    public PageResponseDto<GlucoseDto> listGlucose(Jwt jwt, int page, int size, LocalDate desde, LocalDate hasta) {
+        return measurementServiceClient.listGlucoseByPatient(resolvePatientId(jwt), page, size, desde, hasta);
     }
 
     /**
@@ -82,13 +89,18 @@ public class MeasurementOrchestrationService {
     }
 
     /**
-     * Lista el historial de perfiles lipídicos del paciente autenticado.
+     * Lista el historial paginado de perfiles lipídicos del paciente
+     * autenticado, opcionalmente acotado a un rango de fechas.
      *
-     * @param jwt ID Token de Firebase ya validado
-     * @return los perfiles lipídicos del paciente
+     * @param jwt   ID Token de Firebase ya validado
+     * @param page  número de página solicitado (base 0)
+     * @param size  tamaño de página solicitado
+     * @param desde fecha inicial (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param hasta fecha final (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @return la página de perfiles lipídicos del paciente
      */
-    public List<LipidsDto> listLipids(Jwt jwt) {
-        return measurementServiceClient.listLipidsByPatient(resolvePatientId(jwt));
+    public PageResponseDto<LipidsDto> listLipids(Jwt jwt, int page, int size, LocalDate desde, LocalDate hasta) {
+        return measurementServiceClient.listLipidsByPatient(resolvePatientId(jwt), page, size, desde, hasta);
     }
 
     /**
@@ -114,13 +126,18 @@ public class MeasurementOrchestrationService {
     }
 
     /**
-     * Lista el historial de signos vitales del paciente autenticado.
+     * Lista el historial paginado de signos vitales del paciente autenticado,
+     * opcionalmente acotado a un rango de fechas.
      *
-     * @param jwt ID Token de Firebase ya validado
-     * @return las mediciones de signos vitales del paciente
+     * @param jwt   ID Token de Firebase ya validado
+     * @param page  número de página solicitado (base 0)
+     * @param size  tamaño de página solicitado
+     * @param desde fecha inicial (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @param hasta fecha final (inclusive) del rango a consultar, o {@code null} para no acotar
+     * @return la página de mediciones de signos vitales del paciente
      */
-    public List<VitalsDto> listVitals(Jwt jwt) {
-        return measurementServiceClient.listVitalsByPatient(resolvePatientId(jwt));
+    public PageResponseDto<VitalsDto> listVitals(Jwt jwt, int page, int size, LocalDate desde, LocalDate hasta) {
+        return measurementServiceClient.listVitalsByPatient(resolvePatientId(jwt), page, size, desde, hasta);
     }
 
     /**
