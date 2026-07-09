@@ -14,9 +14,27 @@ on:
   workflow_dispatch:      
 
 jobs:
-  build-and-deploy:
+  test:
+    name: Run tests (100% line coverage required)
     runs-on: ubuntu-latest
-    permissions: 
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests and enforce 100% line coverage
+        run: mvn -B verify
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
       id-token: write #This is required for requesting the OIDC JWT Token
       contents: read #Required when GH token is used to authenticate with private repo
 

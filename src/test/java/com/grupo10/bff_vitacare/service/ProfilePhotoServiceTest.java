@@ -75,4 +75,18 @@ class ProfilePhotoServiceTest {
         assertThatThrownBy(() -> service.getBaseBlobUrl(1L))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void wrapsTheSigningFailureWhenTheAccountKeyIsNotValidForHmacSha256() {
+        // Una AccountKey vacía decodifica a un arreglo de bytes vacío, que
+        // SecretKeySpec rechaza al construirse ("Empty key") dentro del
+        // try/catch de sign(): cubre el catch genérico que envuelve
+        // cualquier falla de firmado en un error de dominio propio.
+        ProfilePhotoService service =
+                new ProfilePhotoService("AccountName=foo;AccountKey=;", "profile-photos");
+
+        assertThatThrownBy(() -> service.generateUploadUrl(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("No fue posible firmar la URL de la foto de perfil");
+    }
 }

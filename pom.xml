@@ -104,6 +104,35 @@
 							</excludes>
 						</configuration>
 					</execution>
+					<execution>
+						<!-- Exige 100% de cobertura de líneas antes de desplegar: si
+						     mvn verify no llega al 100%, el build falla y el workflow
+						     de despliegue no continúa. Misma exclusión que "report"
+						     (ver comentario arriba) para no penalizar la clase de
+						     arranque de Spring Boot. -->
+						<id>jacoco-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<excludes>
+								<exclude>com/grupo10/bff_vitacare/BffVitacareApplication.class</exclude>
+							</excludes>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>1.00</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>
