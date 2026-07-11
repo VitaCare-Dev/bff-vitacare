@@ -73,6 +73,18 @@ class PatientServiceClientTest {
     }
 
     @Test
+    void createPatientThrowsUpstreamErrorPreservingStatusWhenNotAConflict() {
+        // DEF-AUTH-02: antes, cualquier 4xx (incluido un 400 de validación sin
+        // relación con el RUT) se colapsaba en el mismo 409 "RUT duplicado".
+        server.expect(requestTo("http://patient-service/api/patients"))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST));
+
+        assertThatThrownBy(() -> client.createPatient(1L, sampleRegisterRequest()))
+                .isInstanceOf(UpstreamErrorException.class)
+                .satisfies(ex -> assertThat(((UpstreamErrorException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
     void findByUserIdReturnsThePatient() {
         server.expect(requestTo("http://patient-service/api/patients/by-usuario/1"))
                 .andExpect(method(HttpMethod.GET))

@@ -2,6 +2,14 @@ package com.grupo10.bff_vitacare.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,11 +24,13 @@ class ProfilePhotoServiceTest {
                     + "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
                     + "EndpointSuffix=core.windows.net";
 
+    private HttpClient httpClient;
     private ProfilePhotoService profilePhotoService;
 
     @BeforeEach
     void setUp() {
-        profilePhotoService = new ProfilePhotoService(FAKE_CONNECTION_STRING, "profile-photos");
+        httpClient = mock(HttpClient.class);
+        profilePhotoService = new ProfilePhotoService(FAKE_CONNECTION_STRING, "profile-photos", httpClient);
     }
 
     @Test
@@ -65,12 +75,12 @@ class ProfilePhotoServiceTest {
         // El BFF debe poder arrancar aunque AZURE_STORAGE_CONNECTION_STRING
         // todavía no esté configurada; el error solo debe ocurrir al usar
         // realmente la funcionalidad de fotos.
-        new ProfilePhotoService("", "profile-photos");
+        new ProfilePhotoService("", "profile-photos", httpClient);
     }
 
     @Test
     void throwsOnFirstRealUseWhenTheConnectionStringIsMissingTheAccountKey() {
-        ProfilePhotoService service = new ProfilePhotoService("AccountName=foo;", "profile-photos");
+        ProfilePhotoService service = new ProfilePhotoService("AccountName=foo;", "profile-photos", httpClient);
 
         assertThatThrownBy(() -> service.getBaseBlobUrl(1L))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -83,10 +93,49 @@ class ProfilePhotoServiceTest {
         // try/catch de sign(): cubre el catch genérico que envuelve
         // cualquier falla de firmado en un error de dominio propio.
         ProfilePhotoService service =
-                new ProfilePhotoService("AccountName=foo;AccountKey=;", "profile-photos");
+                new ProfilePhotoService("AccountName=foo;AccountKey=;", "profile-photos", httpClient);
 
         assertThatThrownBy(() -> service.generateUploadUrl(1L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("No fue posible firmar la URL de la foto de perfil");
+    }
+
+    @Test
+    void blobExistsReturnsTrueWhenTheHeadRequestRespondsOk() throws Exception {
+        @SuppressWarnings("unchecked")
+        HttpResponse<Void> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+
+        assertThat(profilePhotoService.blobExists(1L)).isTrue();
+    }
+
+    @Test
+    void blobExistsReturnsFalseWhenTheBlobIsNotFound() throws Exception {
+        @SuppressWarnings("unchecked")
+        HttpResponse<Void> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(404);
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+
+        assertThat(profilePhotoService.blobExists(1L)).isFalse();
+    }
+
+    @Test
+    void blobExistsReturnsFalseWhenTheRequestFailsWithAnIOException() throws Exception {
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(new IOException("sin red"));
+
+        assertThat(profilePhotoService.blobExists(1L)).isFalse();
+    }
+
+    @Test
+    void blobExistsReturnsFalseAndRestoresInterruptFlagWhenInterrupted() throws Exception {
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(new InterruptedException("interrumpido"));
+
+        boolean result = profilePhotoService.blobExists(1L);
+
+        assertThat(result).isFalse();
+        assertThat(Thread.interrupted()).isTrue();
     }
 }

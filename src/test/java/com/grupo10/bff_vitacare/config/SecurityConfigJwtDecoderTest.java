@@ -17,6 +17,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,7 @@ class SecurityConfigJwtDecoderTest {
         jwkServer.start();
 
         String jwkSetUri = "http://localhost:" + jwkServer.getAddress().getPort() + "/jwks";
-        SecurityConfig securityConfig = new SecurityConfig(PROJECT_ID, jwkSetUri);
+        SecurityConfig securityConfig = new SecurityConfig(PROJECT_ID, jwkSetUri, List.of());
         jwtDecoder = securityConfig.jwtDecoder();
     }
 

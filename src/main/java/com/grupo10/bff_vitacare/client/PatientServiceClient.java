@@ -15,6 +15,7 @@ import com.grupo10.bff_vitacare.exception.RegistrationConflictException;
 import com.grupo10.bff_vitacare.exception.UpstreamErrorException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -44,7 +45,9 @@ public class PatientServiceClient {
      * @param datos     datos del paciente a registrar
      * @return el paciente creado
      * @throws RegistrationConflictException si el RUT ya está registrado o el
-     *                                        usuario ya tiene un paciente asociado
+     *                                        usuario ya tiene un paciente asociado (409 real)
+     * @throws UpstreamErrorException si patient-service rechaza la solicitud por otro motivo
+     *                                (ej. 400 de validación), preservando su código de estado real
      */
     public PatientDto createPatient(Long idUsuario, RegisterPatientRequestDto datos) {
         PatientCreateRequest body = new PatientCreateRequest(idUsuario, datos);
@@ -53,8 +56,12 @@ public class PatientServiceClient {
                 .body(body)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
-                    throw new RegistrationConflictException(
-                            "No fue posible registrar el paciente con RUT " + datos.getRut());
+                    if (response.getStatusCode() == HttpStatus.CONFLICT) {
+                        throw new RegistrationConflictException(
+                                "No fue posible registrar el paciente con RUT " + datos.getRut());
+                    }
+                    throw new UpstreamErrorException(response.getStatusCode(),
+                            "No fue posible registrar el paciente: los datos enviados no son válidos");
                 })
                 .body(PatientDto.class);
     }

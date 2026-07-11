@@ -20,15 +20,22 @@ import org.springframework.web.client.RestClient;
 @Component
 public class UserServiceClient {
 
+    static final String INTERNAL_API_KEY_HEADER = "X-Internal-Api-Key";
+
     private final RestClient restClient;
 
     /**
      * @param restClientBuilder   builder de {@link RestClient} inyectado por Spring
      * @param userServiceBaseUrl  URL base de {@code user-service}
+     * @param internalApiKey      secreto compartido que user-service exige en
+     *                            {@code /api/**} (ver {@code InternalApiKeyFilter} en user-service)
      */
     public UserServiceClient(RestClient.Builder restClientBuilder,
-                              @Value("${user-service.base-url}") String userServiceBaseUrl) {
-        this.restClient = restClientBuilder.baseUrl(userServiceBaseUrl).build();
+                              @Value("${user-service.base-url}") String userServiceBaseUrl,
+                              @Value("${internal.api-key:}") String internalApiKey) {
+        this.restClient = restClientBuilder.baseUrl(userServiceBaseUrl)
+                .defaultHeader(INTERNAL_API_KEY_HEADER, internalApiKey)
+                .build();
     }
 
     /**

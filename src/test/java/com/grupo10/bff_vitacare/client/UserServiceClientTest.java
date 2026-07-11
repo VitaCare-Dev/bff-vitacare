@@ -30,7 +30,7 @@ class UserServiceClientTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        client = new UserServiceClient(builder, "http://user-service");
+        client = new UserServiceClient(builder, "http://user-service", "test-secret");
     }
 
     @Test

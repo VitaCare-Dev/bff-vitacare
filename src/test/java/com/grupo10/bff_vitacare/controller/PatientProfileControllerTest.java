@@ -13,6 +13,7 @@ import com.grupo10.bff_vitacare.dto.MedicalThresholdDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
 import com.grupo10.bff_vitacare.dto.PhotoUploadUrlDto;
 import com.grupo10.bff_vitacare.dto.UpdatePatientRequestDto;
+import com.grupo10.bff_vitacare.exception.UpstreamErrorException;
 import com.grupo10.bff_vitacare.service.PatientContextService;
 import com.grupo10.bff_vitacare.service.ProfilePhotoService;
 import java.util.List;
@@ -25,6 +26,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
 class PatientProfileControllerTest {
@@ -99,6 +102,7 @@ class PatientProfileControllerTest {
     @Test
     void confirmPhotoUploadPersistsTheBaseUrlAndReturnsASignedReadUrl() {
         when(patientContextService.resolveCurrentPatient(jwt)).thenReturn(patient);
+        when(profilePhotoService.blobExists(1L)).thenReturn(true);
         when(profilePhotoService.getBaseBlobUrl(1L)).thenReturn("https://example.blob/paciente-1.jpg");
         PatientDto updated = new PatientDto();
         updated.setIdPaciente(1L);
@@ -109,6 +113,17 @@ class PatientProfileControllerTest {
         ResponseEntity<PatientDto> response = patientProfileController.confirmPhotoUpload(jwt);
 
         assertThat(response.getBody().getFotoPerfilUrl()).isEqualTo("https://example.blob/paciente-1.jpg?sig=abc");
+    }
+
+    @Test
+    void confirmPhotoUploadThrowsConflictWhenTheBlobDoesNotExistYet() {
+        when(patientContextService.resolveCurrentPatient(jwt)).thenReturn(patient);
+        when(profilePhotoService.blobExists(1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> patientProfileController.confirmPhotoUpload(jwt))
+                .isInstanceOf(UpstreamErrorException.class)
+                .satisfies(ex -> assertThat(((UpstreamErrorException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+        verify(patientServiceClient, never()).updatePhotoUrl(any(), any());
     }
 
     @Test

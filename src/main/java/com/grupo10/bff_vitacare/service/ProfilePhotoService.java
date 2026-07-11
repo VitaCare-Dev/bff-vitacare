@@ -1,6 +1,11 @@
 package com.grupo10.bff_vitacare.service;
 
+import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -36,6 +41,7 @@ public class ProfilePhotoService {
 
     private final String connectionString;
     private final String containerName;
+    private final HttpClient httpClient;
 
     // Se resuelven perezosamente (recién al primer uso real), no en el
     // constructor: así el BFF arranca igual aunque la variable de entorno
@@ -48,12 +54,15 @@ public class ProfilePhotoService {
     /**
      * @param connectionString cadena de conexión de la cuenta de Storage (secreto, nunca se loguea)
      * @param containerName    nombre del contenedor Blob donde se guardan las fotos de perfil
+     * @param httpClient       cliente HTTP usado para verificar la existencia de un blob antes de confirmarlo
      */
     public ProfilePhotoService(
             @Value("${azure.storage.connection-string}") String connectionString,
-            @Value("${azure.storage.profile-photos-container:profile-photos}") String containerName) {
+            @Value("${azure.storage.profile-photos-container:profile-photos}") String containerName,
+            HttpClient httpClient) {
         this.connectionString = connectionString;
         this.containerName = containerName;
+        this.httpClient = httpClient;
     }
 
     private synchronized void ensureCredentialsResolved() {
@@ -96,6 +105,32 @@ public class ProfilePhotoService {
     public String getBaseBlobUrl(Long idPaciente) {
         ensureCredentialsResolved();
         return blobUrl(blobName(idPaciente));
+    }
+
+    /**
+     * Verifica contra Azure Blob Storage (vía HEAD) que la foto de perfil de
+     * un paciente ya fue subida, antes de confirmar/persistir su URL en
+     * {@code patient-service}. Sin esta comprobación, una subida interrumpida
+     * o fallida dejaría al paciente con una URL que apunta a un blob
+     * inexistente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return {@code true} si el blob existe y es accesible; {@code false} en caso contrario
+     */
+    public boolean blobExists(Long idPaciente) {
+        ensureCredentialsResolved();
+        String url = signedUrl(blobName(idPaciente), "r");
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(url)).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
+            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+            return response.statusCode() == 200;
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            return false;
+        }
     }
 
     private String signedUrl(String blobName, String permissions) {

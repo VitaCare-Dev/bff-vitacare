@@ -34,19 +34,24 @@ public class SecurityConfig {
 
     private final String firebaseProjectId;
     private final String firebaseJwkSetUri;
+    private final List<String> allowedOrigins;
 
     /**
      * @param firebaseProjectId id del proyecto de Firebase contra el que se valida
      *                          el issuer y la audiencia de los ID Tokens recibidos
      * @param firebaseJwkSetUri JWKS contra el que se verifica la firma de los ID Tokens;
      *                          por defecto, el que Google documenta para Firebase Authentication
+     * @param allowedOrigins    orígenes web autorizados para CORS, separados por coma; vacío por
+     *                          defecto (la app móvil no depende de CORS, solo un cliente web lo haría)
      */
     public SecurityConfig(
             @Value("${firebase.project-id}") String firebaseProjectId,
             @Value("${firebase.jwk-set-uri:https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com}")
-            String firebaseJwkSetUri) {
+            String firebaseJwkSetUri,
+            @Value("${cors.allowed-origins:}") List<String> allowedOrigins) {
         this.firebaseProjectId = firebaseProjectId;
         this.firebaseJwkSetUri = firebaseJwkSetUri;
+        this.allowedOrigins = allowedOrigins;
     }
 
     /**
@@ -99,15 +104,20 @@ public class SecurityConfig {
     }
 
     /**
-     * Construye la política CORS aplicada a {@code /api/**}: permite cualquier
-     * origen (la app móvil no envía cookies ni credenciales de navegador) y los
-     * métodos HTTP usados por la API.
+     * Construye la política CORS aplicada a {@code /api/**}.
+     *
+     * <p>La app móvil no depende de CORS (solo aplica a navegadores), así que
+     * por defecto ({@code cors.allowed-origins} vacío) no se autoriza ningún
+     * origen web: usar {@code "*"} amplía innecesariamente la superficie de
+     * ataque de una API pensada para un único cliente móvil. Si en el futuro
+     * se necesita un cliente web (ej. panel de administración), sus orígenes
+     * se configuran explícitamente vía esa propiedad.
      *
      * @return la fuente de configuración CORS para las rutas de la API
      */
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOriginPatterns(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(false);

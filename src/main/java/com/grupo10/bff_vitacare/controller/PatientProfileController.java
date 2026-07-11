@@ -9,8 +9,10 @@ import com.grupo10.bff_vitacare.dto.MedicalThresholdDto;
 import com.grupo10.bff_vitacare.dto.PatientDto;
 import com.grupo10.bff_vitacare.dto.PhotoUploadUrlDto;
 import com.grupo10.bff_vitacare.dto.UpdatePatientRequestDto;
+import com.grupo10.bff_vitacare.exception.UpstreamErrorException;
 import com.grupo10.bff_vitacare.service.PatientContextService;
 import com.grupo10.bff_vitacare.service.ProfilePhotoService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -84,12 +86,24 @@ public class PatientProfileController {
      * {@code PUT /api/patients/me/photo}: confirma que la foto de perfil ya
      * se subió a Azure y guarda su URL base en {@code patient-service}.
      *
+     * <p>Antes de persistir la URL, verifica contra Azure Blob Storage que el
+     * archivo realmente exista; si la subida nunca se completó (o falló a
+     * medio camino), rechaza la confirmación en vez de dejar al paciente con
+     * una foto de perfil rota.
+     *
      * @param jwt ID Token de Firebase, inyectado por Spring Security tras validarlo
      * @return 200 con el paciente actualizado (la foto ya con una URL de lectura firmada)
+     * @throws UpstreamErrorException con 409 si el blob todavía no existe en Azure
      */
     @PutMapping("/photo")
     public ResponseEntity<PatientDto> confirmPhotoUpload(@AuthenticationPrincipal Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
+
+        if (!profilePhotoService.blobExists(patient.getIdPaciente())) {
+            throw new UpstreamErrorException(HttpStatus.CONFLICT,
+                    "La foto de perfil aún no terminó de subirse. Inténtalo nuevamente.");
+        }
+
         String baseUrl = profilePhotoService.getBaseBlobUrl(patient.getIdPaciente());
         PatientDto updated = patientServiceClient.updatePhotoUrl(patient.getIdPaciente(), baseUrl);
         updated.setFotoPerfilUrl(profilePhotoService.generateReadUrl(baseUrl));

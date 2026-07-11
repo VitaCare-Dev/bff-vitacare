@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import com.grupo10.bff_vitacare.dto.ErrorResponseDto;
 
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -77,6 +78,42 @@ public class GlobalExceptionHandler {
         error.setStatus(ex.getStatus().value());
         error.setTimestamp(LocalDateTime.now());
         return new ResponseEntity<>(error, ex.getStatus());
+    }
+
+    /**
+     * Deja pasar el 404 nativo de Spring para rutas sin ningún handler
+     * mapeado (ej. {@code GET /}), en vez de que el manejador genérico de
+     * abajo lo convierta incorrectamente en un 500.
+     *
+     * @param ex excepción capturada
+     * @return respuesta con {@link ErrorResponseDto} y estado 404 NOT FOUND
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleNoResourceFound(NoResourceFoundException ex) {
+        ErrorResponseDto error = new ErrorResponseDto();
+        error.setMessage("Recurso no encontrado");
+        error.setStatus(HttpStatus.NOT_FOUND.value());
+        error.setTimestamp(LocalDateTime.now());
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Maneja cualquier excepción no anticipada explícitamente (incluidos
+     * errores 5xx de los microservicios de dominio no traducidos por ningún
+     * cliente, y problemas de red), devolviendo HTTP 500 con el mismo
+     * contrato {@link ErrorResponseDto} en vez del cuerpo de error por
+     * defecto de Spring Boot.
+     *
+     * @param ex excepción capturada
+     * @return respuesta con {@link ErrorResponseDto} y estado 500 INTERNAL SERVER ERROR
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleGenericException(Exception ex) {
+        ErrorResponseDto error = new ErrorResponseDto();
+        error.setMessage("Ocurrió un error inesperado al procesar la solicitud");
+        error.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        error.setTimestamp(LocalDateTime.now());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 }
