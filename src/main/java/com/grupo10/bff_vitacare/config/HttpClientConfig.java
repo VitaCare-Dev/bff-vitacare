@@ -6,7 +6,7 @@ import java.time.Duration;
 import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 
 /**
  * {@link HttpClient} compartido para llamadas HTTP salientes que no pasan por
@@ -34,12 +34,23 @@ public class HttpClientConfig {
      * bloqueado indefinidamente esperando una respuesta que nunca llega,
      * pudiendo agotar el pool de hilos del servidor con pocas solicitudes
      * concurrentes en ese estado.
+     *
+     * <p>Se usa {@link JdkClientHttpRequestFactory} (respaldado por
+     * {@link HttpClient}, que soporta PATCH nativamente) en vez de
+     * {@code SimpleClientHttpRequestFactory}: este último está respaldado por
+     * {@code HttpURLConnection}, que en el JDK no soporta el método PATCH
+     * ({@code ProtocolException: Invalid HTTP method: PATCH}) — rompía
+     * silenciosamente {@code PatientServiceClient.updatePhotoUrl}, el único
+     * cliente que usa {@code .patch()}, mientras el resto de los endpoints
+     * (GET/POST/PUT/DELETE) seguían funcionando con normalidad.
      */
     @Bean
     public RestClientCustomizer restClientTimeoutCustomizer() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(10000);
+        HttpClient jdkHttpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(jdkHttpClient);
+        factory.setReadTimeout(Duration.ofSeconds(10));
         return builder -> builder.requestFactory(factory);
     }
 }
