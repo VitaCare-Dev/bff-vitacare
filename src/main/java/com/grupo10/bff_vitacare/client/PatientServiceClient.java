@@ -150,6 +150,25 @@ public class PatientServiceClient {
     }
 
     /**
+     * Elimina una enfermedad crónica de un paciente y hace que
+     * {@code patient-service} recalcule sus umbrales médicos.
+     *
+     * @param idPaciente   identificador del paciente
+     * @param idEnfermedad identificador de la enfermedad a eliminar
+     * @throws UpstreamErrorException si el paciente no tiene registrada esa enfermedad
+     */
+    public void removeDisease(Long idPaciente, Long idEnfermedad) {
+        restClient.delete()
+                .uri("/api/chronic-diseases/patient/{idPaciente}/disease/{idEnfermedad}", idPaciente, idEnfermedad)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
+                    throw new UpstreamErrorException(response.getStatusCode(),
+                            "No fue posible eliminar la enfermedad " + idEnfermedad + " del paciente");
+                })
+                .toBodilessEntity();
+    }
+
+    /**
      * Elimina un paciente (borrado de cuenta). La base de datos cae en cascada
      * hacia direcciones, enfermedades, umbrales, controles de salud y medicamentos.
      *

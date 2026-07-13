@@ -18,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -134,6 +135,22 @@ public class PatientProfileController {
     public ResponseEntity<List<DiseaseDto>> getCurrentPatientDiseases(@AuthenticationPrincipal Jwt jwt) {
         PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
         return ResponseEntity.ok(patientServiceClient.getPatientDiseases(patient.getIdPaciente()));
+    }
+
+    /**
+     * {@code DELETE /api/patients/me/diseases/{idEnfermedad}}: elimina una
+     * enfermedad crónica del paciente autenticado y recalcula sus umbrales médicos.
+     *
+     * @param jwt          ID Token de Firebase, inyectado por Spring Security tras validarlo
+     * @param idEnfermedad identificador de la enfermedad a eliminar
+     * @return 204 sin contenido
+     */
+    @DeleteMapping("/diseases/{idEnfermedad}")
+    public ResponseEntity<Void> removeCurrentPatientDisease(@AuthenticationPrincipal Jwt jwt,
+                                                             @PathVariable Long idEnfermedad) {
+        PatientDto patient = patientContextService.resolveCurrentPatient(jwt);
+        patientServiceClient.removeDisease(patient.getIdPaciente(), idEnfermedad);
+        return ResponseEntity.noContent().build();
     }
 
     /**

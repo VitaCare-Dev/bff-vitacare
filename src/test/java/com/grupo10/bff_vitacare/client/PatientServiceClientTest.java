@@ -331,4 +331,24 @@ class PatientServiceClientTest {
         assertThatThrownBy(() -> client.deleteAddress(1L))
                 .isInstanceOf(UpstreamErrorException.class);
     }
+
+    @Test
+    void removeDiseaseCallsDeleteEndpoint() {
+        server.expect(requestTo("http://patient-service/api/chronic-diseases/patient/1/disease/2"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        client.removeDisease(1L, 2L);
+
+        server.verify();
+    }
+
+    @Test
+    void removeDiseaseThrowsOnError() {
+        server.expect(requestTo("http://patient-service/api/chronic-diseases/patient/1/disease/2"))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST));
+
+        assertThatThrownBy(() -> client.removeDisease(1L, 2L))
+                .isInstanceOf(UpstreamErrorException.class);
+    }
 }

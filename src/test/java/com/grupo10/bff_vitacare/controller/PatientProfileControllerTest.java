@@ -171,4 +171,14 @@ class PatientProfileControllerTest {
         verify(patientServiceClient).deletePatient(1L);
         verify(userServiceClient).deleteUserByFirebaseUid("uid-1");
     }
+
+    @Test
+    void removeCurrentPatientDiseaseDeletesFromPatientService() {
+        when(patientContextService.resolveCurrentPatient(jwt)).thenReturn(patient);
+
+        ResponseEntity<Void> response = patientProfileController.removeCurrentPatientDisease(jwt, 2L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        verify(patientServiceClient).removeDisease(1L, 2L);
+    }
 }
