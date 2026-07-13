@@ -1,5 +1,6 @@
 package com.grupo10.bff_vitacare.client;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.grupo10.bff_vitacare.dto.ChatMessageResponseDto;
@@ -27,16 +28,25 @@ public class ChatbotServiceClient {
     }
 
     /**
-     * Envía un mensaje del usuario al chatbot IA.
+     * Envía un mensaje del usuario al chatbot IA, incluyendo el contexto
+     * médico del paciente (enfermedades/umbrales) para que la IA responda de
+     * forma más pertinente a su condición.
      *
-     * @param idUsuario identificador interno del usuario autenticado
-     * @param mensaje   mensaje del usuario
+     * @param idUsuario        identificador interno del usuario autenticado
+     * @param mensaje          mensaje del usuario
+     * @param contextoPaciente descripción del contexto médico del paciente,
+     *                         o {@code null} si no tiene enfermedades registradas
      * @return la respuesta generada por el chatbot
      */
-    public String sendMessage(Long idUsuario, String mensaje) {
+    public String sendMessage(Long idUsuario, String mensaje, String contextoPaciente) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("idUsuario", idUsuario);
+        body.put("mensaje", mensaje);
+        body.put("contextoPaciente", contextoPaciente);
+
         ChatMessageResponseDto response = restClient.post()
                 .uri("/api/chat/enviar")
-                .body(Map.of("idUsuario", idUsuario, "mensaje", mensaje))
+                .body(body)
                 .retrieve()
                 .body(ChatMessageResponseDto.class);
         return response.getRespuesta();

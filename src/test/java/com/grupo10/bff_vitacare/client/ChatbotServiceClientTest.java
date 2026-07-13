@@ -31,10 +31,25 @@ class ChatbotServiceClientTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(jsonPath("$.idUsuario").value(1))
                 .andExpect(jsonPath("$.mensaje").value("hola"))
+                .andExpect(jsonPath("$.contextoPaciente").value("Enfermedades: Diabetes."))
                 .andRespond(withSuccess("{\"respuesta\":\"hola, ¿en qué puedo ayudarte?\"}", MediaType.APPLICATION_JSON));
 
-        String reply = client.sendMessage(1L, "hola");
+        String reply = client.sendMessage(1L, "hola", "Enfermedades: Diabetes.");
 
         assertThat(reply).isEqualTo("hola, ¿en qué puedo ayudarte?");
+    }
+
+    @Test
+    void sendMessageWithNullContextSendsItAsNull() {
+        server.expect(requestTo("http://chatbot-service/api/chat/enviar"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.idUsuario").value(1))
+                .andExpect(jsonPath("$.mensaje").value("hola"))
+                .andExpect(jsonPath("$.contextoPaciente").value(org.hamcrest.Matchers.nullValue()))
+                .andRespond(withSuccess("{\"respuesta\":\"hola\"}", MediaType.APPLICATION_JSON));
+
+        String reply = client.sendMessage(1L, "hola", null);
+
+        assertThat(reply).isEqualTo("hola");
     }
 }
