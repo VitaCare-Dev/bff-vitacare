@@ -2,6 +2,8 @@ package com.grupo10.bff_vitacare.exception;
 
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Traduce un usuario no encontrado en un microservicio ascendente a una
@@ -109,6 +113,10 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGenericException(Exception ex) {
+        // Sin este log, un error no anticipado no dejaba ningún rastro: el
+        // cliente solo veía un 500 genérico y no había forma de diagnosticar
+        // la causa real desde los logs del servidor.
+        log.error("Error no anticipado al procesar la solicitud", ex);
         ErrorResponseDto error = new ErrorResponseDto();
         error.setMessage("Ocurrió un error inesperado al procesar la solicitud");
         error.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
